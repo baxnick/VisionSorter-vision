@@ -1,0 +1,7 @@
+struct cube_t
+{
+    info_t          info;
+    string          id;
+    double          position[2];
+    double          orientation;
+}

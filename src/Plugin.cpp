@@ -3,7 +3,8 @@
 BasePlugin::BasePlugin(PluginManager *manager, std::string id, int priority)
     :m_manager(manager),
       m_id(id),
-      m_priority(priority)
+      m_priority(priority),
+      m_numTrackedItems(0)
 {}
 
 std::string BasePlugin::Id()
@@ -14,4 +15,9 @@ std::string BasePlugin::Id()
 int BasePlugin::Priority()
 {
     return m_priority;
+}
+
+int BasePlugin::TrackedItemCount()
+{
+    return m_numTrackedItems;
 }

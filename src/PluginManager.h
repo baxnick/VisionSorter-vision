@@ -5,6 +5,8 @@
 #include <osgART/TrackerManager>
 #include <lcm/lcm.h>
 
+#include "info_t.h"
+
 class PluginManager
 {
 public:
@@ -14,4 +16,5 @@ public:
 
     // TODO import LCM
     virtual lcm_t* GetComms() = 0;
+    virtual info_t GetInfo() = 0;
 };

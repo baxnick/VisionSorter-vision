@@ -16,7 +16,7 @@ class Plugin
 public:
     virtual std::string Id() = 0;
     virtual int Priority() = 0;
-
+    virtual int TrackedItemCount() = 0;
     virtual bool Init(PluginManager *manager, int argc, char** argv) = 0;
     virtual void AnnounceClients(std::vector<Plugin> clients) = 0;
 
@@ -31,9 +31,12 @@ class BasePlugin : public Plugin
     public:
         virtual std::string Id();
         virtual int Priority();
+        virtual int TrackedItemCount();
+
         BasePlugin(PluginManager *manager, std::string id, int priority);
     protected:
         PluginManager *m_manager;
+        int m_numTrackedItems;
     private:
         std::string m_id;
         int m_priority;

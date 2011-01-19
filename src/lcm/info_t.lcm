@@ -1,0 +1,5 @@
+struct info_t
+{
+    int64_t         timestamp;
+    string          source;
+}

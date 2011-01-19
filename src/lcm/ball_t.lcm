@@ -1,0 +1,8 @@
+struct ball_t
+{
+    info_t      info;
+    double      position[2];
+
+    const int32_t RED = 0, BLUE = 1;
+    int32_t     colour;
+}

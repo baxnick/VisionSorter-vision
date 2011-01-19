@@ -1,0 +1,11 @@
+struct cam_t
+{
+    info_t          info;
+
+    const int8_t    YES = 1 , NO = 0;
+    int8_t          hasVision;
+    double          p0[2];
+    double          p1[2];
+    double          p2[2];
+    double          p3[2];
+}
