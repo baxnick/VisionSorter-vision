@@ -20,8 +20,7 @@ int64_t __ball_t_hash_recursive(const __lcm_hash_ptr *p)
     const __lcm_hash_ptr cp = { p, (void*)__ball_t_get_hash };
     (void) cp;
  
-    int64_t hash = 0x9b13c92778a6b0b3LL
-         + __info_t_hash_recursive(&cp)
+    int64_t hash = 0x6241ac31f9394276LL
          + __double_hash_recursive(&cp)
          + __int32_t_hash_recursive(&cp)
         ;
@@ -44,9 +43,6 @@ int __ball_t_encode_array(void *buf, int offset, int maxlen, const ball_t *p, in
     int pos = 0, thislen, element;
  
     for (element = 0; element < elements; element++) {
- 
-        thislen = __info_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].info), 1);
-        if (thislen < 0) return thislen; else pos += thislen;
  
         thislen = __double_encode_array(buf, offset + pos, maxlen - pos, p[element].position, 2);
         if (thislen < 0) return thislen; else pos += thislen;
@@ -77,8 +73,6 @@ int __ball_t_encoded_array_size(const ball_t *p, int elements)
     int size = 0, element;
     for (element = 0; element < elements; element++) {
  
-        size += __info_t_encoded_array_size(&(p[element].info), 1);
- 
         size += __double_encoded_array_size(p[element].position, 2);
  
         size += __int32_t_encoded_array_size(&(p[element].colour), 1);
@@ -98,9 +92,6 @@ int __ball_t_decode_array(const void *buf, int offset, int maxlen, ball_t *p, in
  
     for (element = 0; element < elements; element++) {
  
-        thislen = __info_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].info), 1);
-        if (thislen < 0) return thislen; else pos += thislen;
- 
         thislen = __double_decode_array(buf, offset + pos, maxlen - pos, p[element].position, 2);
         if (thislen < 0) return thislen; else pos += thislen;
  
@@ -115,8 +106,6 @@ int __ball_t_decode_array_cleanup(ball_t *p, int elements)
 {
     int element;
     for (element = 0; element < elements; element++) {
- 
-        __info_t_decode_array_cleanup(&(p[element].info), 1);
  
         __double_decode_array_cleanup(p[element].position, 2);
  
@@ -151,8 +140,6 @@ int __ball_t_clone_array(const ball_t *p, ball_t *q, int elements)
 {
     int element;
     for (element = 0; element < elements; element++) {
- 
-        __info_t_clone_array(&(p[element].info), &(q[element].info), 1);
  
         __double_clone_array(p[element].position, q[element].position, 2);
  

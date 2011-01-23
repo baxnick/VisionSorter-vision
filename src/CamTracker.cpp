@@ -6,6 +6,11 @@ CamTracker::CamTracker(osg::Projection *proj, osgART::Marker *marker)
       m_marker(marker)
 {}
 
+bool CamTracker::hasVision()
+{
+    return m_marker->isValid();
+}
+
 double CamTracker::FindZRotation()
 {
     double heading, attitude, bank;

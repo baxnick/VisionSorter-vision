@@ -15,6 +15,7 @@ public:
     osg::Vec2d ProjectPoint(osg::Vec4d worldLoc);
     static osg::Vec2d ProjectPoint(osg::Vec4d worldLoc, osg::Matrixd proj, osg::Matrixd cam);
     double FindZRotation();
+    bool hasVision();
 protected:
     osg::Projection* m_proj;
     osgART::Marker *m_marker;

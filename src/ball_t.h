@@ -16,14 +16,12 @@
 extern "C" {
 #endif
 
-#include "info_t.h"
 #define BALL_T_RED 0
 #define BALL_T_BLUE 1
 
 typedef struct _ball_t ball_t;
 struct _ball_t
 {
-    info_t     info;
     double     position[2];
     int32_t    colour;
 };
