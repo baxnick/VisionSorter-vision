@@ -1,5 +1,8 @@
+#include "Plugin.h"
 #include "BallPlugin.h"
 #include "util.h"
+#include "balls_t.h"
+#include "ball_t.h"
 
 #include <opencv/cv.h>
 #include <opencv/cxcore.h>
@@ -27,6 +30,7 @@ void BallSettings::load(const std::string &path)
 
     read_ini(path, pt);
 
+    m_transmitRate = pt.get("ball.transmit_rate", 0.5);
     m_bottomAng = pt.get("ball.angle_to_bottom", 270.0);
     m_bottomAng = m_bottomAng * M_PI / 180;
 }
@@ -148,17 +152,63 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
              }
 
              offset = center - offset;
-             realPositions.push_back(osg::Vec2d(offset.x, offset.y));
 
              // draw the circle outline
              cv::circle( finalImg, center, radius+1, cv::Scalar(0,0,255), 2, 8, 0 );
              // draw the circle "contact point"
              cv::circle( finalImg, offset, 3, cv::Scalar(0,255,0), -1, 8, 0 );
+
+
+             // Now calculate the real world position
+             if (!m_tableRef->CanHasTracking()->hasVision()) continue;
+
+             osg::Vec2d realPos(offset.x, offset.y);
+             realPos.x() = 2 * offset.x / sourceVid->getWidth() - 1;
+             realPos.y() = 2 * offset.y / sourceVid->getHeight() - 1;
+
+             realPos = m_tableRef->Surface()->Unproject(realPos);
+             realPositions.push_back(realPos);
         }
 
     cv::imshow("bin", maskImg);
     cv::imshow("out", outImg);
     cv::waitKey(3);
+
+
+    if (realPositions.size() == 0) return;
+
+    m_elapsedTime += elapsed;
+
+    if (m_elapsedTime < m_cfg.m_transmitRate) return;
+
+    m_elapsedTime = fmod(m_elapsedTime, m_cfg.m_transmitRate);
+
+    balls_t message;
+    message.info = m_manager->GetInfo(now);
+
+    std::vector<osg::Vec2d>::iterator iter;
+
+    ball_t indieBalls[realPositions.size()];
+
+    int i = 0;
+    for (iter = realPositions.begin(); iter != realPositions.end(); iter++, i++)
+    {
+        osg::Vec2d pos = *iter;
+
+        ball_t ballMessage;
+
+        ballMessage.colour = BALL_T_RED;
+        ballMessage.position[0] = pos.x();
+        ballMessage.position[1] = pos.y();
+
+        indieBalls[i] = ballMessage;
+    }
+
+    message.balls_size = realPositions.size();
+    message.balls = indieBalls;
+
+    lcm_t *comms = m_manager->GetComms();
+    balls_t_publish(comms, BALL_ID, &message);
 }
 
 void BallPlugin::IncludeInScene(osg::Node* child)

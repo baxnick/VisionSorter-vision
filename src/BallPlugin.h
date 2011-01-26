@@ -11,6 +11,7 @@ typedef struct ball_settings
 {
     void load(const std::string &filename);
     double m_bottomAng;
+    double m_transmitRate;
 } BallSettings;
 
 class BallPlugin : public BasePlugin
