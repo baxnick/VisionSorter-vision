@@ -82,7 +82,10 @@ void VisionSystem::AddScene(osg::Node* node)
     m_sceneGroup->addChild(node);
 }
 
-void VisionSystem::RegisterViewEvent(osgGA::GUIEventHandler *handler){}
+void VisionSystem::RegisterViewEvent(osgGA::GUIEventHandler *handler)
+{
+m_viewer.getEventHandlerList().push_back(handler);
+}
 
 lcm_t* VisionSystem::GetComms(){
     return m_lcm;

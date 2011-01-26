@@ -24,6 +24,19 @@ double CamTracker::FindZRotation()
     return hDeg;
 }
 
+double CamTracker::FindBanking()
+{
+    double heading, attitude, bank;
+
+    osg::Matrixd source = m_marker->getTransform();
+    osg::Quat rotation = source.getRotate();
+
+    getEulerFromQuat(rotation, heading, attitude, bank);
+    double bDeg = bank * (180. / M_PI);
+
+    return bDeg;
+}
+
 osg::Vec4d CamTracker::UnprojectToPlane(osg::Vec2d pt, osg::Matrixd proj, osg::Matrixd cam, osg::Vec4d V0, osg::Vec4d n)
 {
     osg::Matrixd projInv = osg::Matrixd::inverse(proj);

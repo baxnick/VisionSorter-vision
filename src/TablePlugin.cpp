@@ -12,6 +12,37 @@
 
 using namespace std;
 
+//TEMPORARY
+
+class MyMouseEventHandler : public osgGA::GUIEventHandler
+    {
+    public:
+       MyMouseEventHandler(TrackableSurface *ts);
+       virtual bool handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAdapter&);
+       virtual void accept(osgGA::GUIEventHandlerVisitor& v)   { v.visit(*this); };
+    private:
+        TrackableSurface *m_ts;
+};
+
+MyMouseEventHandler::MyMouseEventHandler(TrackableSurface *ts)
+      : m_ts(ts)
+{}
+
+bool MyMouseEventHandler::handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAdapter&)
+{
+    int event = ea.getEventType();
+
+    if (event != osgGA::GUIEventAdapter::PUSH) return false;
+
+    osg::Vec2d realWorldPos = m_ts->Unproject(osg::Vec2d(ea.getX(), ea.getY()));
+
+    cout << "RX: " << realWorldPos.x();
+    cout << " RY: " << realWorldPos.y() << endl;
+    return true;
+}
+
+// END TEMP
+
 void TableSettings::load(const std::string &path)
 {
     using boost::property_tree::ptree;
@@ -35,7 +66,7 @@ void MarkPoint(osg::Group *scene, const osg::Vec3 &point)
             osg::Vec3(point.x() - boxSizeX / 2, point.y() - boxSizeY / 2, point.z() + boxSizeZ / 2),
             boxSizeX,boxSizeY,boxSizeZ));
 
-    sd->setColor(osg::Vec4(0, 0, 1, 1));
+    sd->setColor(osg::Vec4(0, 1, 0, 1));
     osg::Geode* basicShapesGeode = new osg::Geode();
     basicShapesGeode->addDrawable(sd);
     scene->addChild(basicShapesGeode);
@@ -77,6 +108,12 @@ bool TablePlugin::Init(PluginManager *manager, const std::string &cfgFile)
 
     transMat->addChild(m_sceneGroup);
     m_manager->AddScene(transMat.get());
+
+
+    // TEMPORARY
+    MyMouseEventHandler *handler = new MyMouseEventHandler(m_surface);
+    m_manager->RegisterViewEvent(handler);
+    // END TEMP
 
     return true;
 }
@@ -137,3 +174,4 @@ osg::Vec2d TrackableSurface::Unproject(osg::Vec2d pt)
     osg::Vec4d result = m_tracker->UnprojectToPlane(pt, m_V0, m_n);
     return osg::Vec2d(result.x(), result.y());
 }
+

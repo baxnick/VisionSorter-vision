@@ -1,5 +1,6 @@
 #include "CubePlugin.h"
 #include "cube_t.h"
+#include "util.h"
 
 #include <osg/ShapeDrawable>
 #include <osg/Geode>
@@ -85,27 +86,13 @@ bool CubePlugin::Init(PluginManager *manager, const std::string &cfgFile)
 
 void CubePlugin::AnnounceClients(std::vector<Plugin*> &clients)
 {
-    vector<Plugin*>::iterator plugIt;
-
-    m_tableRef = NULL;
-    for(plugIt = clients.begin(); plugIt != clients.end(); plugIt++)
-    {
-        TablePlugin* table = dynamic_cast<TablePlugin*>(*plugIt);
-
-        if (table != NULL)
-        {
-            m_tableRef = table;
-            break;
-        }
-    }
+    m_tableRef = getTableRef(clients);
 
     if (m_tableRef == NULL)
     {
         cout << "A table reference wasn't found. This is needed for tracking." << endl;
         throw exception();
     }
-
-    cout << "Successfully RETRIEVED A TABLE" << endl;
 }
 
 void CubePlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now, double elapsed)

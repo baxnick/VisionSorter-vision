@@ -1,5 +1,23 @@
 #include "util.h"
 
+TablePlugin* getTableRef(std::vector<Plugin*> &plugins)
+{
+    TablePlugin *tableRef = NULL;
+
+    std::vector<Plugin*>::iterator plugIt;
+    for(plugIt = plugins.begin(); plugIt != plugins.end(); plugIt++)
+    {
+        TablePlugin* table = dynamic_cast<TablePlugin*>(*plugIt);
+
+        if (table != NULL)
+        {
+            tableRef = table;
+            break;
+        }
+    }
+
+    return tableRef;
+}
 
 /*
 
