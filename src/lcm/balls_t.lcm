@@ -1,0 +1,6 @@
+struct balls_t
+{
+    info_t      info;
+    int32_t     balls_size;
+    ball_t      balls[balls_size];
+}
