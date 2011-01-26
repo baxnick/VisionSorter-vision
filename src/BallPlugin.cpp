@@ -127,7 +127,7 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
     // See http://opencv.willowgarage.com/documentation/cpp/feature_detection.html?highlight=hough#HoughCircles
         // The vector circles will hold the position and radius of the detected circles
         std::vector<cv::Vec3f> circles;
-        std::vector<cv::Vec2d> realPositions;
+        std::vector<osg::Vec2d> realPositions;
 
         // Detect circles That have a radius between 20 and 400 that are a minimum of 70 pixels apart
         cv::HoughCircles(maskImg, circles, CV_HOUGH_GRADIENT, 1, 70, 140, 15, 20, outImg.cols / 4);
@@ -148,7 +148,7 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
              }
 
              offset = center - offset;
-             realPositions.push_back(osg::Vec2d(offset.x(), offset.y());
+             realPositions.push_back(osg::Vec2d(offset.x, offset.y));
 
              // draw the circle outline
              cv::circle( finalImg, center, radius+1, cv::Scalar(0,0,255), 2, 8, 0 );
