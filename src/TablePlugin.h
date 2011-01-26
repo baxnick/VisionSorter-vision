@@ -21,14 +21,15 @@ typedef struct table_settings
 class TrackableSurface
 {
 public:
-    TrackableSurface(CamTracker *tracker, osg::Vec4d V0, osg::Vec4d n);
+    TrackableSurface(CamTracker *tracker, osg::Vec2d dimensions, osg::Vec4d V0, osg::Vec4d n);
     osg::Vec2d Unproject(osg::Vec2d pt);
+    bool IsInBounds(osg::Vec2 pt);
     double GetHeading();
 protected:
     CamTracker *m_tracker;
     osg::Vec4d m_V0;
     osg::Vec4d m_n;
-
+    osg::Vec2d m_dimensions;
 };
 
 

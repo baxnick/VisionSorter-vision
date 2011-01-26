@@ -167,7 +167,10 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
              realPos.y() = 2 * offset.y / sourceVid->getHeight() - 1;
 
              realPos = m_tableRef->Surface()->Unproject(realPos);
-             realPositions.push_back(realPos);
+             if (m_tableRef->Surface()->IsInBounds(realPos))
+             {
+                realPositions.push_back(realPos);
+             }
         }
 
     cv::imshow("bin", maskImg);

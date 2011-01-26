@@ -95,7 +95,9 @@ bool TablePlugin::Init(PluginManager *manager, const std::string &cfgFile)
     m_marker->setTranslationalSmoothing(m_cfg.m_translateSmoothing);
 
     m_camTracker = new CamTracker(m_manager->GetProjection(), m_marker);
-    m_surface = new TrackableSurface(m_camTracker, osg::Vec4d(0., 0., 0., 1.), osg::Vec4d(0., 0., 1., 0.));
+    m_surface = new TrackableSurface(m_camTracker,
+                                     osg::Vec2d(m_cfg.m_tableWidth, m_cfg.m_tableHeight),
+                                     osg::Vec4d(0., 0., 0., 1.), osg::Vec4d(0., 0., 1., 0.));
 
     osg::ref_ptr<osg::MatrixTransform> transMat = new osgART::ARTTransform(m_marker);
 
@@ -158,8 +160,9 @@ CamTracker* TablePlugin::CanHasTracking()
 
 
 
-TrackableSurface::TrackableSurface(CamTracker *tracker, osg::Vec4d V0, osg::Vec4d n)
+TrackableSurface::TrackableSurface(CamTracker *tracker, osg::Vec2d dimensions, osg::Vec4d V0, osg::Vec4d n)
     :m_tracker(tracker),
+      m_dimensions(dimensions),
       m_V0(V0),
       m_n(n)
 {}
@@ -167,6 +170,13 @@ TrackableSurface::TrackableSurface(CamTracker *tracker, osg::Vec4d V0, osg::Vec4
 double TrackableSurface::GetHeading()
 {
     return m_tracker->FindZRotation();
+}
+
+bool TrackableSurface::IsInBounds(osg::Vec2 pt)
+{
+    if (pt.x() < 0 || pt.y() < 0) return false;
+    if (pt.x() > m_dimensions.x() || pt.y() > m_dimensions.y()) return false;
+    return true;
 }
 
 osg::Vec2d TrackableSurface::Unproject(osg::Vec2d pt)
