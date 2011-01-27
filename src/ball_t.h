@@ -23,6 +23,8 @@ typedef struct _ball_t ball_t;
 struct _ball_t
 {
     double     position[2];
+    double     age;
+    double     confidence;
     int32_t    colour;
 };
  

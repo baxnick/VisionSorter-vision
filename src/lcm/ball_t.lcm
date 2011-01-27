@@ -1,6 +1,8 @@
 struct ball_t
 {
     double      position[2];
+    double      age;
+    double      confidence;
 
     const int32_t RED = 0, BLUE = 1;
     int32_t     colour;

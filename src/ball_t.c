@@ -20,7 +20,9 @@ int64_t __ball_t_hash_recursive(const __lcm_hash_ptr *p)
     const __lcm_hash_ptr cp = { p, (void*)__ball_t_get_hash };
     (void) cp;
  
-    int64_t hash = 0x6241ac31f9394276LL
+    int64_t hash = 0x7a5ea2b5220bc574LL
+         + __double_hash_recursive(&cp)
+         + __double_hash_recursive(&cp)
          + __double_hash_recursive(&cp)
          + __int32_t_hash_recursive(&cp)
         ;
@@ -45,6 +47,12 @@ int __ball_t_encode_array(void *buf, int offset, int maxlen, const ball_t *p, in
     for (element = 0; element < elements; element++) {
  
         thislen = __double_encode_array(buf, offset + pos, maxlen - pos, p[element].position, 2);
+        if (thislen < 0) return thislen; else pos += thislen;
+ 
+        thislen = __double_encode_array(buf, offset + pos, maxlen - pos, &(p[element].age), 1);
+        if (thislen < 0) return thislen; else pos += thislen;
+ 
+        thislen = __double_encode_array(buf, offset + pos, maxlen - pos, &(p[element].confidence), 1);
         if (thislen < 0) return thislen; else pos += thislen;
  
         thislen = __int32_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].colour), 1);
@@ -75,6 +83,10 @@ int __ball_t_encoded_array_size(const ball_t *p, int elements)
  
         size += __double_encoded_array_size(p[element].position, 2);
  
+        size += __double_encoded_array_size(&(p[element].age), 1);
+ 
+        size += __double_encoded_array_size(&(p[element].confidence), 1);
+ 
         size += __int32_t_encoded_array_size(&(p[element].colour), 1);
  
     }
@@ -95,6 +107,12 @@ int __ball_t_decode_array(const void *buf, int offset, int maxlen, ball_t *p, in
         thislen = __double_decode_array(buf, offset + pos, maxlen - pos, p[element].position, 2);
         if (thislen < 0) return thislen; else pos += thislen;
  
+        thislen = __double_decode_array(buf, offset + pos, maxlen - pos, &(p[element].age), 1);
+        if (thislen < 0) return thislen; else pos += thislen;
+ 
+        thislen = __double_decode_array(buf, offset + pos, maxlen - pos, &(p[element].confidence), 1);
+        if (thislen < 0) return thislen; else pos += thislen;
+ 
         thislen = __int32_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].colour), 1);
         if (thislen < 0) return thislen; else pos += thislen;
  
@@ -108,6 +126,10 @@ int __ball_t_decode_array_cleanup(ball_t *p, int elements)
     for (element = 0; element < elements; element++) {
  
         __double_decode_array_cleanup(p[element].position, 2);
+ 
+        __double_decode_array_cleanup(&(p[element].age), 1);
+ 
+        __double_decode_array_cleanup(&(p[element].confidence), 1);
  
         __int32_t_decode_array_cleanup(&(p[element].colour), 1);
  
@@ -142,6 +164,10 @@ int __ball_t_clone_array(const ball_t *p, ball_t *q, int elements)
     for (element = 0; element < elements; element++) {
  
         __double_clone_array(p[element].position, q[element].position, 2);
+ 
+        __double_clone_array(&(p[element].age), &(q[element].age), 1);
+ 
+        __double_clone_array(&(p[element].confidence), &(q[element].confidence), 1);
  
         __int32_t_clone_array(&(p[element].colour), &(q[element].colour), 1);
  

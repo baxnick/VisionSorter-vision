@@ -80,6 +80,12 @@ void BallSettings::load(const std::string &path)
         ballParamSet.load(colourProp);
         m_ballParams.push_back(ballParamSet);
     }
+
+    m_confidenceThreshold = pt.get("ball.confidence_threshold", 0.3);
+    m_ageThreshold = pt.get("ball.age_threshold", 2.0);
+    m_detectTTL = pt.get("ball.ttl", 3.0);
+    m_detectHistory = pt.get("ball.history", 20);
+    m_errRadius = pt.get("ball.error", 0.1);
 }
 
 BallPlugin::BallPlugin(PluginManager *manager)
@@ -172,8 +178,31 @@ std::vector<cv::Vec3f> findCircles(
     return circles;
 }
 
+inline void cvPtToOsg(osg::Vec2d &pt, int width, int height)
+{
+    pt.x() = 2. * pt.x() / width - 1.;
+    pt.y() = 2. * pt.y() / height - 1.;
+    pt.y() *= -1;
+}
+
+inline void detectPointFromCV(DetectedPoint &dp,
+    const cv::Vec3f &circle, double offsetAngle, int width, int height)
+{
+    dp.m_center = osg::Vec2d(circle[0], circle[1]);
+    float radius = circle[2];
+
+    dp.m_offset = osg::Vec2d(radius * cos(offsetAngle), radius * sin(offsetAngle));
+    dp.m_offset = dp.m_center - dp.m_offset;
+
+    cvPtToOsg(dp.m_center, width, height);
+    cvPtToOsg(dp.m_offset, width, height);
+    dp.m_radius = radius / width;
+}
+
 void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now, double elapsed)
 {
+    m_elapsedTime += elapsed;
+
     unsigned char imgCpy[sourceVid->getHeight() * sourceVid->getWidth() * 3];
     memcpy(imgCpy, sourceVid->getImage()->data(), sizeof(imgCpy));
 
@@ -189,7 +218,10 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
     cv::Mat hsvImg = incImg.clone();
     cv::cvtColor (incImg, hsvImg, CV_BGR2HSV);
 
-    cv::GaussianBlur(hsvImg,hsvImg, cv::Size(9,9), m_cfg.m_preBlur, m_cfg.m_preBlur);
+    if (m_cfg.m_preBlur > 0)
+    {
+        cv::GaussianBlur(hsvImg,hsvImg, cv::Size(9,9), m_cfg.m_preBlur, m_cfg.m_preBlur);
+    }
 
     cv::Mat hue = cv::Mat::zeros(hsvImg.rows, hsvImg.cols, CV_8U);
     cv::Mat sat = cv::Mat::zeros(hsvImg.rows, hsvImg.cols, CV_8U);
@@ -200,7 +232,13 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
     cv::Mat img_split[] = { hue, sat, val};
     cv::mixChannels(&hsvImg, 3,img_split,3,from_to,3);
 
-    std::vector<osg::Vec3d> realPositions;
+
+
+    float offsetAngle = (m_tableRef->CanHasTracking()->hasVision()) ?
+                (270. - m_tableRef->CanHasTracking()->FindAttitude()) * M_PI / 180. :
+                m_cfg.m_bottomAng;
+
+    std::vector<DetectedPoint> detected;
     std::vector<BallCharacteristics>::iterator ballIter;
     for(ballIter = m_cfg.m_ballParams.begin(); ballIter != m_cfg.m_ballParams.end(); ballIter++)
     {
@@ -212,82 +250,85 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
 
         for( size_t i = 0; i < circles.size(); i++ )
         {
-             // round the floats to an int
-             cv::Point center(circles[i][0], circles[i][1]);
-             float radius = circles[i][2];
+            DetectedPoint dp;
+            detectPointFromCV(dp, circles[i], offsetAngle, maskImg.cols, maskImg.rows);
+            dp.m_colour = colourSet.m_colour;
 
-             cv::Point offset;
-             if (!m_tableRef->CanHasTracking()->hasVision())
-                 offset = cv::Point(radius * cos(m_cfg.m_bottomAng), radius * sin(m_cfg.m_bottomAng));
-             else
-             {
-                 double ang = (270 - m_tableRef->CanHasTracking()->FindAttitude()) * M_PI / 180.;
-                 offset = cv::Point(radius * cos(ang), radius * sin(ang));
-             }
+            // TODO optionally draw the detected circles at this point..
 
-             offset = center - offset;
+            if (!m_tableRef->CanHasTracking()->hasVision()) continue;
+            dp.m_real = m_tableRef->Surface()->Unproject(dp.m_offset);
 
-             // draw the circle outline
-             cv::circle( finalImg, center, radius+1, cv::Scalar(0,0,255), 2, 8, 0 );
-             // draw the circle "contact point"
-             cv::circle( finalImg, offset, 3, cv::Scalar(0,255,0), -1, 8, 0 );
-
-
-             // Now calculate the real world position
-             if (!m_tableRef->CanHasTracking()->hasVision()) continue;
-
-             osg::Vec2d realPos(offset.x, offset.y);
-
-             realPos.x() = 2. * offset.x / incImg.cols - 1.;
-             realPos.y() = 2. * offset.y / incImg.rows - 1.;
-             realPos.y() *= -1;
-
-             realPos = m_tableRef->Surface()->Unproject(realPos);
-             if (m_tableRef->Surface()->IsInBounds(realPos))
-             {
-                // hackish way to keep track of colour
-                osg::Vec3d realPosWithColour = osg::Vec3d(realPos, colourSet.m_colour);
-                realPositions.push_back(realPosWithColour);
-             }
+            if (m_tableRef->Surface()->IsInBounds(dp.m_real))
+            {
+                detected.push_back(dp);
+            }
         }
-
         cv::imshow(colourSet.m_name, maskImg);
         cv::waitKey(3);
     }
 
-    if (realPositions.size() == 0) return;
+    for (int j = 0; j < detected.size(); j++)
+    {
+        bool foundMatch = false;
+        for(int i = 0; i < m_clusters.size(); i++)
+        {
+            if (m_clusters[i].inRange(detected[j]))
+            {
+                m_clusters[i].newPoint(detected[j]);
+                foundMatch = true;
+                break;
+            }
+        }
 
-    m_elapsedTime += elapsed;
+        if (!foundMatch)
+        {
+            DetectCluster newCluster(&m_cfg);
+            newCluster.newPoint(detected[j]);
+            m_clusters.push_back(newCluster);
+        }
+    }
+
+    std::vector<DetectCluster> safeClusters;
+    for(int i = 0; i < m_clusters.size(); i++)
+    {
+        bool alive = m_clusters[i].tick(elapsed);
+        if (alive) safeClusters.push_back(m_clusters[i]);
+    }
+
+    m_clusters = safeClusters;
+
+    vector<DetectCluster*> viable = viablePoints();
 
     if (m_elapsedTime < m_cfg.m_transmitRate) return;
-
     m_elapsedTime = fmod(m_elapsedTime, m_cfg.m_transmitRate);
 
     balls_t message;
     message.info = m_manager->GetInfo(now);
 
-    ball_t indieBalls[realPositions.size()];
+    ball_t indieBalls[viable.size()];
+    message.balls_size = viable.size();
+    message.balls = indieBalls;
 
-    int i = 0;
-    vector<osg::Vec3d>::iterator posIter;
-    for (posIter = realPositions.begin(); posIter != realPositions.end(); posIter++, i++)
+    for(int i = 0; i < viable.size(); i++)
     {
-        osg::Vec3d pos = *posIter;
+        DetectCluster* dc = viable[i];
+        DetectedPoint dp = dc->averagedPoint();
 
         ball_t ballMessage;
 
-        ballMessage.colour = pos.z();
-        ballMessage.position[0] = pos.x();
-        ballMessage.position[1] = pos.y();
+        ballMessage.colour = dp.m_colour;
+        ballMessage.position[0] = dp.m_real.x();
+        ballMessage.position[1] = dp.m_real.y();
+        ballMessage.age = dc->age();
+        ballMessage.confidence = dc->confidence();
 
         indieBalls[i] = ballMessage;
     }
 
-    message.balls_size = realPositions.size();
-    message.balls = indieBalls;
-
     lcm_t *comms = m_manager->GetComms();
     balls_t_publish(comms, BALL_ID, &message);
+
 }
 
 void BallPlugin::IncludeInScene(osg::Node* child)
@@ -295,4 +336,101 @@ void BallPlugin::IncludeInScene(osg::Node* child)
     // TODO
 }
 
+vector<DetectCluster*> BallPlugin::viablePoints()
+{
+    vector<DetectCluster*> viable;
+
+    vector<DetectCluster>::iterator iter;
+
+    for (iter = m_clusters.begin(); iter != m_clusters.end(); iter++)
+    {
+        DetectCluster cluster = *iter;
+
+        if (cluster.age() < m_cfg.m_ageThreshold) continue;
+        if (cluster.confidence() < m_cfg.m_confidenceThreshold) continue;
+        viable.push_back(&(*iter));
+    }
+
+    return viable;
+}
+
 CamTracker* BallPlugin::CanHasTracking(){ return NULL; }
+
+
+        DetectCluster::DetectCluster(const BallSettings *settings)
+            :m_settings(settings)
+        {
+            m_ttl = settings->m_detectTTL;
+        }
+
+        bool DetectCluster::tick(double time)
+        {
+            m_age += time;
+            m_ttl -= time;
+            m_ticks++;
+
+            if (m_ttl > 0) return true;
+            else return false;
+        }
+
+        bool DetectCluster::inRange(DetectedPoint pt)
+        {
+            DetectedPoint avg = averagedPoint();
+
+            osg::Vec2d distance = avg.m_offset - pt.m_offset;
+
+            if (pt.m_colour != m_members[0].m_colour)
+            {
+                return false;
+            }
+            else if (
+                    sqrt(
+                         distance.x()*distance.x() +
+                         distance.y()*distance.y())
+                     > m_settings->m_errRadius)
+            {
+                     return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        void DetectCluster::newPoint(DetectedPoint pt)
+        {
+            m_members.push_back(pt);
+            m_ttl = m_settings->m_detectTTL;
+            m_votes++;
+
+            if (m_members.size() > m_settings->m_detectHistory)
+                m_members.erase(m_members.begin());
+        }
+
+        DetectedPoint DetectCluster::averagedPoint()
+        {
+            if (m_members.size() == 1) return m_members[0];
+            std::vector<DetectedPoint>::iterator iter;
+
+            DetectedPoint avgPoint = m_members[0];
+
+
+            for(iter = m_members.begin() + 1; iter != m_members.end(); iter++)
+            {
+                DetectedPoint next = *iter;
+                avgPoint.m_center += next.m_center;
+                avgPoint.m_offset += next.m_offset;
+                avgPoint.m_real += next.m_real;
+                avgPoint.m_radius += next.m_radius;
+            }
+
+            avgPoint.m_center /= m_members.size();
+            avgPoint.m_offset /= m_members.size();
+            avgPoint.m_radius /= m_members.size();
+            avgPoint.m_real /= m_members.size();
+
+            return avgPoint;
+        }
+
+        double DetectCluster::confidence() { return m_votes / m_ticks; }
+        double DetectCluster::age() { return m_age; }

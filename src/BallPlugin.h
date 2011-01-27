@@ -3,9 +3,20 @@
 #include "Plugin.h"
 #include "TablePlugin.h"
 
+#include <boost/smart_ptr.hpp>
+
 namespace Ball{
     const std::string CHANNEL("BALL");
 };
+
+typedef struct detected_point
+{
+    osg::Vec2d m_center;
+    osg::Vec2d m_offset;
+    osg::Vec2d m_real;
+    double m_radius;
+    int m_colour;
+} DetectedPoint;
 
 typedef struct ball_characteristics
 {
@@ -33,7 +44,35 @@ typedef struct ball_settings
     double m_houghParam1;
     double m_houghParam2;
     double m_minRadius;
+
+    double m_confidenceThreshold;
+    double m_ageThreshold;
+    double m_detectTTL;
+    int m_detectHistory;
+    double m_errRadius;
+
 } BallSettings;
+
+class DetectCluster
+{
+    public:
+        DetectCluster(const BallSettings *settings);
+        bool tick(double time);
+        bool inRange(DetectedPoint pt);
+        void newPoint(DetectedPoint pt);
+
+        DetectedPoint averagedPoint();
+        double confidence();
+        double age();
+        int colour();
+    private:
+        const BallSettings *m_settings;
+        double m_age;
+        double m_ttl;
+        double m_ticks;
+        double m_votes;
+        std::vector<DetectedPoint> m_members;
+};
 
 class BallPlugin : public BasePlugin
 {
@@ -47,8 +86,10 @@ public:
 
     CamTracker* CanHasTracking();
 private:
+    std::vector<DetectCluster*> viablePoints();
     osg::Group *m_sceneGroup;
     BallSettings m_cfg;
     TablePlugin *m_tableRef;
+    std::vector<DetectCluster> m_clusters;
 };
 
