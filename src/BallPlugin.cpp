@@ -91,13 +91,15 @@ bool BallPlugin::Init(PluginManager *manager, const std::string &cfgFile)
 {
     m_cfg.load(cfgFile);
 
+    std::vector<BallCharacteristics>::iterator iter;
+    for(iter = m_cfg.m_ballParams.begin(); iter != m_cfg.m_ballParams.end(); iter++)
+    {
+        BallCharacteristics colourSet = *iter;
 
-    cv::namedWindow ("bin", 1);
-    cv::waitKey(3);
+        cv::namedWindow (colourSet.m_name);
+        cv::waitKey(3);
+    }
 
-
-    cv::namedWindow ("out", 1);
-    cv::waitKey(3);
     return true;
 }
 
@@ -112,76 +114,101 @@ void BallPlugin::AnnounceClients(std::vector<Plugin*> &clients)
     }
 }
 
-void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now, double elapsed)
+std::vector<cv::Vec3f> findCircles(
+    const BallSettings &gCfg, const BallCharacteristics &iCfg,
+    const cv::Mat &hue, const cv::Mat &sat, const cv::Mat &val, cv::Mat &maskImg)
 {
-    unsigned char imgCpy[sourceVid->getHeight() * sourceVid->getWidth() * 3];
-    memcpy(imgCpy, sourceVid->getImage()->data(), sizeof(imgCpy));
-
-    cv::Mat incImg = cv::Mat(
-                sourceVid->getHeight(), sourceVid->getWidth(),
-                 CV_8UC3, imgCpy);
-    cv::cvtColor(incImg, incImg, CV_RGB2BGR);
-
-
-    cv::Mat finalImg = cv::Mat(
-                sourceVid->getHeight(), sourceVid->getWidth(),
-                 CV_8UC3, sourceVid->getImageRaw());
-    cv::Mat outImg = incImg.clone();
-    cv::Mat hsvImg = incImg.clone();
-    cv::cvtColor (incImg, hsvImg, CV_BGR2HSV);
-    cv::GaussianBlur(hsvImg,hsvImg, cv::Size(9,9), 6, 6 );
-
-    cv::Mat hue = cv::Mat::zeros(hsvImg.rows, hsvImg.cols, CV_8U);
-    cv::Mat sat = cv::Mat::zeros(hsvImg.rows, hsvImg.cols, CV_8U);
-    cv::Mat val = cv::Mat::zeros(hsvImg.rows, hsvImg.cols, CV_8U);
-
-    cv::Mat maskImg = cv::Mat::zeros(hsvImg.rows, hsvImg.cols, CV_8U);
-
-    int from_to[] = { 0,0, 1,1, 2,2};
-    cv::Mat img_split[] = { hue, sat, val};
-    cv::mixChannels(&hsvImg, 3,img_split,3,from_to,3);
-
-    for(int i = 0; i < outImg.rows; i++)
+    for(int i = 0; i < maskImg.rows; i++)
     {
-      for(int j = 0; j < outImg.cols; j++)
+      for(int j = 0; j < maskImg.cols; j++)
       {
-        // The output pixel is white if the input pixel
-        // hue is orange and saturation is reasonable
-        if((hue.at<unsigned char>(i,j) < 21 ||
-           hue.at<unsigned char>(i,j) > 171) &&
-           sat.at<unsigned char>(i,j) > 140 &&
-           val.at<unsigned char>(i,j) > 40) {
-          maskImg.at<unsigned char>(i,j) = 255;
-        } else {
-          maskImg.at<unsigned char>(i,j) = 0;
-          // Clear pixel blue output channel
-          outImg.at<unsigned char>(i,j*3+0) = 0;
-          // Clear pixel green output channel
-          outImg.at<unsigned char>(i,j*3+1) = 0;
-          // Clear pixel red output channel
-          outImg.at<unsigned char>(i,j*3+2) = 0;
+        if (iCfg.m_hue_min <= iCfg.m_hue_max &&
+                (hue.at<unsigned char>(i,j) < iCfg.m_hue_min ||
+                hue.at<unsigned char>(i,j) > iCfg.m_hue_max))
+        {
+            maskImg.at<unsigned char>(i,j) = 0;
         }
-      }
+        else if (iCfg.m_hue_min > iCfg.m_hue_max &&
+            (hue.at<unsigned char>(i,j) < iCfg.m_hue_min &&
+            hue.at<unsigned char>(i,j) > iCfg.m_hue_max))
+        {
+            maskImg.at<unsigned char>(i,j) = 0;
+        }
+        else if (sat.at<unsigned char>(i,j) < iCfg.m_sat_min)
+        {
+            maskImg.at<unsigned char>(i,j) = 0;
+        }
+        else if (val.at<unsigned char>(i,j) < iCfg.m_val_min)
+        {
+            maskImg.at<unsigned char>(i,j) = 0;
+        }
+        else
+        {
+            maskImg.at<unsigned char>(i,j) = 255;
+        }
+    }
     }
 
     cv::Size strel_size;
-    strel_size.width = 4;
-    strel_size.height = 4;
+    strel_size.width = gCfg.m_strelSize;
+    strel_size.height = gCfg.m_strelSize;
     cv::Mat strel = cv::getStructuringElement(cv::MORPH_ELLIPSE,strel_size);
     cv::morphologyEx(maskImg,maskImg,cv::MORPH_OPEN,strel,cv::Point(-1, -1),3);
 
     // Convert White on Black to Black on White by inverting the image
     cv::bitwise_not(maskImg, maskImg);
     // Blur the image to improve detection
-    cv::GaussianBlur(maskImg,maskImg, cv::Size(9,9), 4, 4 );
+    cv::GaussianBlur(maskImg,maskImg, cv::Size(9,9), gCfg.m_postBlur, gCfg.m_postBlur );
 
     // See http://opencv.willowgarage.com/documentation/cpp/feature_detection.html?highlight=hough#HoughCircles
         // The vector circles will hold the position and radius of the detected circles
         std::vector<cv::Vec3f> circles;
-        std::vector<osg::Vec2d> realPositions;
 
         // Detect circles That have a radius between 20 and 400 that are a minimum of 70 pixels apart
-        cv::HoughCircles(maskImg, circles, CV_HOUGH_GRADIENT, 1, 70, 140, 15, 20, outImg.cols / 4);
+        cv::HoughCircles(maskImg, circles, CV_HOUGH_GRADIENT, 1,
+                         gCfg.m_houghMinDist,
+                         gCfg.m_houghParam1, gCfg.m_houghParam2,
+                         gCfg.m_minRadius, maskImg.cols / 4);
+    return circles;
+}
+
+void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now, double elapsed)
+{
+    unsigned char imgCpy[sourceVid->getHeight() * sourceVid->getWidth() * 3];
+    memcpy(imgCpy, sourceVid->getImage()->data(), sizeof(imgCpy));
+
+    cv::Mat finalImg = cv::Mat(
+                sourceVid->getHeight(), sourceVid->getWidth(),
+                 CV_8UC3, sourceVid->getImageRaw());
+
+    cv::Mat incImg = cv::Mat(
+                sourceVid->getHeight(), sourceVid->getWidth(),
+                 CV_8UC3, imgCpy);
+    cv::cvtColor(incImg, incImg, CV_RGB2BGR);
+
+    cv::Mat hsvImg = incImg.clone();
+    cv::cvtColor (incImg, hsvImg, CV_BGR2HSV);
+
+    cv::GaussianBlur(hsvImg,hsvImg, cv::Size(9,9), m_cfg.m_preBlur, m_cfg.m_preBlur);
+
+    cv::Mat hue = cv::Mat::zeros(hsvImg.rows, hsvImg.cols, CV_8U);
+    cv::Mat sat = cv::Mat::zeros(hsvImg.rows, hsvImg.cols, CV_8U);
+    cv::Mat val = cv::Mat::zeros(hsvImg.rows, hsvImg.cols, CV_8U);
+
+
+    int from_to[] = { 0,0, 1,1, 2,2};
+    cv::Mat img_split[] = { hue, sat, val};
+    cv::mixChannels(&hsvImg, 3,img_split,3,from_to,3);
+
+    std::vector<osg::Vec3d> realPositions;
+    std::vector<BallCharacteristics>::iterator ballIter;
+    for(ballIter = m_cfg.m_ballParams.begin(); ballIter != m_cfg.m_ballParams.end(); ballIter++)
+    {
+        BallCharacteristics colourSet = *ballIter;
+
+        cv::Mat maskImg = cv::Mat::zeros(hsvImg.rows, hsvImg.cols, CV_8U);
+        std::vector<cv::Vec3f> circles = findCircles(
+                    m_cfg, colourSet, hue, sat, val, maskImg);
 
         for( size_t i = 0; i < circles.size(); i++ )
         {
@@ -210,6 +237,7 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
              if (!m_tableRef->CanHasTracking()->hasVision()) continue;
 
              osg::Vec2d realPos(offset.x, offset.y);
+
              realPos.x() = 2. * offset.x / incImg.cols - 1.;
              realPos.y() = 2. * offset.y / incImg.rows - 1.;
              realPos.y() *= -1;
@@ -217,14 +245,15 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
              realPos = m_tableRef->Surface()->Unproject(realPos);
              if (m_tableRef->Surface()->IsInBounds(realPos))
              {
-                realPositions.push_back(realPos);
+                // hackish way to keep track of colour
+                osg::Vec3d realPosWithColour = osg::Vec3d(realPos, colourSet.m_colour);
+                realPositions.push_back(realPosWithColour);
              }
         }
 
-    cv::imshow("bin", maskImg);
-    cv::imshow("out", outImg);
-    cv::waitKey(3);
-
+        cv::imshow(colourSet.m_name, maskImg);
+        cv::waitKey(3);
+    }
 
     if (realPositions.size() == 0) return;
 
@@ -237,18 +266,17 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
     balls_t message;
     message.info = m_manager->GetInfo(now);
 
-    std::vector<osg::Vec2d>::iterator iter;
-
     ball_t indieBalls[realPositions.size()];
 
     int i = 0;
-    for (iter = realPositions.begin(); iter != realPositions.end(); iter++, i++)
+    vector<osg::Vec3d>::iterator posIter;
+    for (posIter = realPositions.begin(); posIter != realPositions.end(); posIter++, i++)
     {
-        osg::Vec2d pos = *iter;
+        osg::Vec3d pos = *posIter;
 
         ball_t ballMessage;
 
-        ballMessage.colour = BALL_T_RED;
+        ballMessage.colour = pos.z();
         ballMessage.position[0] = pos.x();
         ballMessage.position[1] = pos.y();
 
