@@ -12,16 +12,43 @@
 #include <opencv/cxcore.hpp>
 #include <opencv/cxmat.hpp>
 #include <string.h>
+#include <sstream>
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 
 using namespace std;
 
-typedef struct ball_characteristics
+int parseColour(const std::string &colour)
 {
+    if (colour == string("RED"))
+        return BALL_T_RED;
+    else if (colour == string("BLUE"))
+        return BALL_T_BLUE;
+    else
+        return -1;
+}
 
-} BallCharacteristics;
+void BallCharacteristics::load(std::string paramSet)
+{
+    std::stringstream ss;
+    ss.str(paramSet);
+    std::string colourStr;
+
+    ss >> m_name >> m_hue_min >> m_hue_max >> m_sat_min >> m_val_min;
+    m_hue_min /= 2;
+    m_hue_max /= 2;
+
+    m_sat_min *= 2.55;
+    m_val_min *= 2.55;
+
+    m_colour = parseColour(m_name);
+    if (m_colour == -1)
+    {
+        cout << "You entered a colour that does not exist: " << m_name << endl;
+        throw exception();
+    }
+}
 
 void BallSettings::load(const std::string &path)
 {
@@ -33,6 +60,26 @@ void BallSettings::load(const std::string &path)
     m_transmitRate = pt.get("ball.transmit_rate", 0.5);
     m_bottomAng = pt.get("ball.angle_to_bottom", 270.0);
     m_bottomAng = m_bottomAng * M_PI / 180.;
+
+    m_preBlur = pt.get("ball.pre_blur", 6.);
+    m_postBlur = pt.get("ball.post_blur", 4.);
+    m_strelSize = pt.get("ball.strel_size", 3.);
+    m_houghMinDist = pt.get("ball.hough_min_dist", 70.);
+    m_houghParam1 = pt.get("ball.hough_param_1", 145.);
+    m_houghParam2 = pt.get("ball.hough_param_2", 15.);
+    m_minRadius = pt.get("ball.hough_min_radius", 20.);
+
+    int colour_count = pt.get("ball.colour_count", 0);
+
+    for (int i = 0; i < colour_count; i++)
+    {
+        stringstream iStr; iStr << i;
+        BallCharacteristics ballParamSet;
+        std::string colourProp = string("ball.colour/") + iStr.str();
+        colourProp = pt.get<std::string>(colourProp.c_str());
+        ballParamSet.load(colourProp);
+        m_ballParams.push_back(ballParamSet);
+    }
 }
 
 BallPlugin::BallPlugin(PluginManager *manager)
