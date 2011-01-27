@@ -103,6 +103,8 @@ bool BallPlugin::Init(PluginManager *manager, const std::string &cfgFile)
     m_sceneGroup = new osg::Group();
     m_tableRef->IncludeInScene(m_sceneGroup);
 
+    if (!m_manager->ShowUi()) return true;
+
     std::vector<BallCharacteristics>::iterator iter;
     for(iter = m_cfg.m_ballParams.begin(); iter != m_cfg.m_ballParams.end(); iter++)
     {
@@ -292,8 +294,12 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
                 detected.push_back(dp);
             }
         }
-        cv::imshow(colourSet.m_name, maskImg);
-        cv::waitKey(3);
+
+        if (m_manager->ShowUi())
+        {
+            cv::imshow(colourSet.m_name, maskImg);
+            cv::waitKey(3);
+        }
     }
 
     for (int j = 0; j < detected.size(); j++)
@@ -406,7 +412,6 @@ CamTracker* BallPlugin::CanHasTracking(){ return NULL; }
             DetectedPoint avg = averagedPoint();
 
             osg::Vec2d distance = avg.m_real - pt.m_real;
-            cout << distance.x() << " " << distance.y() << endl;
             if (pt.m_colour != m_members[0].m_colour)
             {
                 return false;

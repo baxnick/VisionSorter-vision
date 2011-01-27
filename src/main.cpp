@@ -13,7 +13,7 @@ using namespace std;
 int main(int argc, char** argv)
 {
     // Load vision system
-    VisionSystem vs = VisionSystem(string("CAM0"), argc, argv);
+    VisionSystem vs = VisionSystem(argc, argv);
 
     if (!vs.Init())
     {
@@ -28,7 +28,7 @@ int main(int argc, char** argv)
     BallPlugin *ball = new BallPlugin(&vs);
     vs.LoadPlugin(ball);
 
-    std::vector < boost::shared_ptr<CubePlugin> > cubes = CubePlugin::LoadPlugins(&vs, string(argv[1]));
+    std::vector < boost::shared_ptr<CubePlugin> > cubes = CubePlugin::LoadPlugins(&vs, vs.CfgPath());
     std::vector < boost::shared_ptr<CubePlugin> >::iterator iter;
 
     for (iter = cubes.begin(); iter != cubes.end(); iter++)

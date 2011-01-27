@@ -12,6 +12,7 @@
 class PluginManager
 {
 public:
+    virtual bool ShowUi() = 0;
     virtual void RegisterViewEvent (osgGA::GUIEventHandler *handler) = 0;
     virtual void AddScene (osg::Node *node) = 0;
     virtual osg::ref_ptr<osgART::GenericTracker> ConstructTracker(std::string trackerCfg) = 0;

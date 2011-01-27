@@ -58,10 +58,11 @@ osg::ref_ptr<GenericTracker> LoadTracker(GenericVideo *video, const string &came
         return tracker;
 }
 
-VisionSystem::VisionSystem(std::string id, int argc, char **argv)
-    :m_id(id),
-      m_argc(argc),
-      m_argv(argv)
+VisionSystem::VisionSystem(int argc, char **argv)
+    : m_argc(argc),
+      m_argv(argv),
+      m_showUi(false),
+      m_iniFile(General::INI_PATH)
 {}
 
 
@@ -78,8 +79,8 @@ osg::Projection* VisionSystem::GetProjection()
 
 void VisionSystem::AddScene(osg::Node* node)
 {
-    node->getOrCreateStateSet()->setRenderBinDetails(5, "RenderBin");
-    m_sceneGroup->addChild(node);
+        node->getOrCreateStateSet()->setRenderBinDetails(5, "RenderBin");
+        m_sceneGroup->addChild(node);
 }
 
 void VisionSystem::RegisterViewEvent(osgGA::GUIEventHandler *handler)
@@ -102,27 +103,48 @@ info_t VisionSystem::GetInfo(osg::Timer_t stamp)
 
 bool VisionSystem::Init()
 {
-    if (m_argc != 5)
+    if (m_argc < 3 || m_argc > 6)
     {
         cout << m_argc << endl;
-        cout << "Args: <cfgPath> <datafile> <width> <height>" << endl;
+        cout << "Args: <camId> <datafile> [width] [height] [iniPath]" << endl;
         return false;
     }
 
     // INITIALISATION OF OSG STUFF
 
-    m_cfgFile = std::string(m_argv[1]);
+    m_id = std::string(m_argv[1]);
     m_cameraDat = std::string(m_argv[2]);
-    int vidx = atoi(m_argv[3]);
-    int vidy = atoi(m_argv[4]);
+
+    int vidx;
+    int vidy;
+
+    if (m_argc >= 5)
+    {
+        vidx = atoi(m_argv[3]);
+        vidy = atoi(m_argv[4]);
+        m_showUi = true;
+    }
+
+    if (m_argc == 4)
+    {
+        m_iniFile = std::string(m_argv[3]);
+    }
+    else if (m_argc == 6)
+    {
+        m_iniFile = std::string(m_argv[5]);
+    }
 
     osg::setNotifyLevel(osg::INFO);
     osgARTInit(&m_argc, m_argv);
     osg::DisplaySettings::instance()->setMinimumNumStencilBits(8);
-    m_viewer.setUpViewer(osgProducer::Viewer::ESCAPE_SETS_DONE);
-    m_viewer.getCullSettings().setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
 
-    m_viewer.getCamera(0)->getRenderSurface()->setWindowRectangle(0,0,vidx,vidy); // viewer accepts W/H arguments from argv
+    if (m_showUi)
+    {
+        m_viewer.setUpViewer(osgProducer::Viewer::ESCAPE_SETS_DONE);
+        m_viewer.getCullSettings().setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
+
+        m_viewer.getCamera(0)->getRenderSurface()->setWindowRectangle(0,0,vidx,vidy); // viewer accepts W/H arguments from argv
+    }
 
     // load a video plugin
     m_video = VideoManager::createVideoFromPlugin("osgart_artoolkit");
@@ -214,7 +236,7 @@ bool VisionSystem::PrepareForRun()
         Plugin *plugin = *plugIt;
 
         cout << "Preparing plugin " << plugin->Id() << endl;
-        bool loaded = plugin->Init(this, m_cfgFile);
+        bool loaded = plugin->Init(this, m_iniFile);
 
         if (!loaded)
         {
@@ -226,21 +248,29 @@ bool VisionSystem::PrepareForRun()
     return true;
 }
 
+bool VisionSystem::Done()
+{
+    if (m_showUi)
+        return m_viewer.done();
+    else
+        return false;
+}
+
 void VisionSystem::Run()
 {
-    m_viewer.realize();
+    if (m_showUi) m_viewer.realize();
     m_video->start();
 
     osg::Timer_t lastFrameTime = osg::Timer::instance()->tick();
     m_startTime = lastFrameTime;
-    while (!m_viewer.done())
+    while (!Done())
     {
 
         osg::Timer_t now = osg::Timer::instance()->tick();
         double frameTime = osg::Timer::instance()->delta_s(lastFrameTime,now);
         lastFrameTime = now;
 
-        m_viewer.sync();
+        if (m_showUi) m_viewer.sync();
         m_video->update();
 
         vector<osg::ref_ptr<GenericTracker> >::iterator trackIt;
@@ -260,13 +290,31 @@ void VisionSystem::Run()
             plugin->IncomingFrame(m_video.get(), now, frameTime);
         }
 
-        m_viewer.update();
-        m_viewer.frame();
+        if (m_showUi)
+        {
+            m_viewer.update();
+            m_viewer.frame();
+        }
     }
 
-    m_viewer.sync();
-    m_viewer.cleanup_frame();
-    m_viewer.sync();
+    if (m_showUi)
+    {
+        m_viewer.sync();
+        m_viewer.cleanup_frame();
+        m_viewer.sync();
+    }
+
     m_video->stop();
     m_video->close();
+}
+
+
+bool VisionSystem::ShowUi()
+{
+    return m_showUi;
+}
+
+std::string VisionSystem::CfgPath()
+{
+    return m_iniFile;
 }

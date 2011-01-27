@@ -5,17 +5,23 @@
 
 #include <osgProducer/Viewer>
 
+namespace General
+{
+    const std::string INI_PATH("Data/vision.ini");
+}
+
 class VisionSystem : public PluginManager
 {
 public:
-    VisionSystem(std::string id, int argc, char** argv);
+    VisionSystem(int argc, char** argv);
     virtual ~VisionSystem(){};
     bool Init();
     bool LoadPlugin(Plugin *plugin);
     bool PrepareForRun();
     void Run();
 
-
+    std::string CfgPath();
+    virtual bool ShowUi();
     void RegisterViewEvent (osgGA::GUIEventHandler *handler);
     void AddScene (osg::Node *node);
     osg::ref_ptr<osgART::GenericTracker> ConstructTracker(std::string trackerCfg);
@@ -26,9 +32,10 @@ public:
     info_t GetInfo(osg::Timer_t stamp);
 
 private:
+    bool m_showUi;
     int m_argc;
     char** m_argv;
-    std::string m_cfgFile;
+    std::string m_iniFile;
     std::string m_cameraDat;
     std::string m_id;
     std::vector<Plugin*> m_plugins;
@@ -40,4 +47,6 @@ private:
     osg::Group* m_sceneGroup;
     osg::ref_ptr<osgART::GenericVideo> m_video;
     lcm_t* m_lcm;
+
+    bool Done();
 };
