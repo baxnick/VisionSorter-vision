@@ -16,6 +16,7 @@ public:
     static osg::Vec2d ProjectPoint(osg::Vec4d worldLoc, osg::Matrixd proj, osg::Matrixd cam);
     double FindZRotation();
     double FindBanking();
+    double FindAttitude();
     bool hasVision();
 protected:
     osg::Projection* m_proj;

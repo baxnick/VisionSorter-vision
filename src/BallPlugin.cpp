@@ -32,7 +32,7 @@ void BallSettings::load(const std::string &path)
 
     m_transmitRate = pt.get("ball.transmit_rate", 0.5);
     m_bottomAng = pt.get("ball.angle_to_bottom", 270.0);
-    m_bottomAng = m_bottomAng * M_PI / 180;
+    m_bottomAng = m_bottomAng * M_PI / 180.;
 }
 
 BallPlugin::BallPlugin(PluginManager *manager)
@@ -147,8 +147,8 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
                  offset = cv::Point(radius * cos(m_cfg.m_bottomAng), radius * sin(m_cfg.m_bottomAng));
              else
              {
-                 double bankingAng = m_tableRef->CanHasTracking()->FindBanking() * M_PI / 180.;
-                 offset = cv::Point(radius * cos(bankingAng), radius * sin(bankingAng));
+                 double ang = (270 - m_tableRef->CanHasTracking()->FindAttitude()) * M_PI / 180.;
+                 offset = cv::Point(radius * cos(ang), radius * sin(ang));
              }
 
              offset = center - offset;
@@ -163,8 +163,9 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
              if (!m_tableRef->CanHasTracking()->hasVision()) continue;
 
              osg::Vec2d realPos(offset.x, offset.y);
-             realPos.x() = 2 * offset.x / sourceVid->getWidth() - 1;
-             realPos.y() = 2 * offset.y / sourceVid->getHeight() - 1;
+             realPos.x() = 2. * offset.x / incImg.cols - 1.;
+             realPos.y() = 2. * offset.y / incImg.rows - 1.;
+             realPos.y() *= -1;
 
              realPos = m_tableRef->Surface()->Unproject(realPos);
              if (m_tableRef->Surface()->IsInBounds(realPos))
