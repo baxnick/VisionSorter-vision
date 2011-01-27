@@ -4,6 +4,9 @@
 #include "balls_t.h"
 #include "ball_t.h"
 
+#include <osg/ShapeDrawable>
+#include <osg/Geode>
+
 #include <opencv/cv.h>
 #include <opencv/cxcore.h>
 #include <opencv/highgui.h>
@@ -96,6 +99,9 @@ BallPlugin::BallPlugin(PluginManager *manager)
 bool BallPlugin::Init(PluginManager *manager, const std::string &cfgFile)
 {
     m_cfg.load(cfgFile);
+
+    m_sceneGroup = new osg::Group();
+    m_tableRef->IncludeInScene(m_sceneGroup);
 
     std::vector<BallCharacteristics>::iterator iter;
     for(iter = m_cfg.m_ballParams.begin(); iter != m_cfg.m_ballParams.end(); iter++)
@@ -199,6 +205,28 @@ inline void detectPointFromCV(DetectedPoint &dp,
     dp.m_radius = radius / width;
 }
 
+void markBallLocations(osg::Group *node, const vector<DetectCluster*> &points)
+{
+    node->removeChildren(0, node->getNumChildren());
+
+    vector<DetectCluster*>::const_iterator iter;
+    for(iter = points.begin(); iter != points.end(); iter++)
+    {
+        DetectCluster *dc = *iter;
+        DetectedPoint dp = dc->averagedPoint();
+
+        float radius = 5.0f;
+        osg::ShapeDrawable *sd = new osg::ShapeDrawable(new osg::Sphere(
+                osg::Vec3f(dp.m_real.x(), dp.m_real.y(), radius), radius));
+
+        sd->setColor(osg::Vec4(1, 1, 1, 1));
+        osg::Geode* basicShapesGeode = new osg::Geode();
+
+        basicShapesGeode->addDrawable(sd);
+        node->addChild(basicShapesGeode);
+    }
+}
+
 void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now, double elapsed)
 {
     m_elapsedTime += elapsed;
@@ -297,8 +325,8 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
     }
 
     m_clusters = safeClusters;
-
     vector<DetectCluster*> viable = viablePoints();
+    markBallLocations(m_sceneGroup, viable);
 
     if (m_elapsedTime < m_cfg.m_transmitRate) return;
     m_elapsedTime = fmod(m_elapsedTime, m_cfg.m_transmitRate);
@@ -377,8 +405,8 @@ CamTracker* BallPlugin::CanHasTracking(){ return NULL; }
         {
             DetectedPoint avg = averagedPoint();
 
-            osg::Vec2d distance = avg.m_offset - pt.m_offset;
-
+            osg::Vec2d distance = avg.m_real - pt.m_real;
+            cout << distance.x() << " " << distance.y() << endl;
             if (pt.m_colour != m_members[0].m_colour)
             {
                 return false;

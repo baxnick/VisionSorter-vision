@@ -202,6 +202,13 @@ bool VisionSystem::PrepareForRun()
 {
     vector<Plugin*>::iterator plugIt;
 
+
+    for(plugIt = m_plugins.begin(); plugIt != m_plugins.end(); plugIt++)
+    {
+        Plugin *plugin = *plugIt;
+        plugin->AnnounceClients(m_plugins);
+    }
+
     for(plugIt = m_plugins.begin(); plugIt != m_plugins.end(); plugIt++)
     {
         Plugin *plugin = *plugIt;
@@ -214,12 +221,6 @@ bool VisionSystem::PrepareForRun()
             cout << "Could not load plugin: " << plugin->Id() << endl;
             return false;
         }
-    }
-
-    for(plugIt = m_plugins.begin(); plugIt != m_plugins.end(); plugIt++)
-    {
-        Plugin *plugin = *plugIt;
-        plugin->AnnounceClients(m_plugins);
     }
 
     return true;
