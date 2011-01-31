@@ -67,6 +67,7 @@ void BallSettings::load(const std::string &path)
     m_preBlur = pt.get("ball.pre_blur", 6.);
     m_postBlur = pt.get("ball.post_blur", 4.);
     m_strelSize = pt.get("ball.strel_size", 3.);
+    m_pixelThreshold = pt.get("ball.pixel_threshold", 0.03);
     m_houghMinDist = pt.get("ball.hough_min_dist", 70.);
     m_houghParam1 = pt.get("ball.hough_param_1", 145.);
     m_houghParam2 = pt.get("ball.hough_param_2", 15.);
@@ -84,6 +85,7 @@ void BallSettings::load(const std::string &path)
         m_ballParams.push_back(ballParamSet);
     }
 
+    m_weightFactor = pt.get("ball.bottom_weight_factor", 0.5);
     m_confidenceThreshold = pt.get("ball.confidence_threshold", 0.3);
     m_ageThreshold = pt.get("ball.age_threshold", 2.0);
     m_detectTTL = pt.get("ball.ttl", 3.0);
@@ -132,6 +134,7 @@ std::vector<cv::Vec3f> findCircles(
     const BallSettings &gCfg, const BallCharacteristics &iCfg,
     const cv::Mat &hue, const cv::Mat &sat, const cv::Mat &val, cv::Mat &maskImg)
 {
+    int significantPixels = 0;
     for(int i = 0; i < maskImg.rows; i++)
     {
       for(int j = 0; j < maskImg.cols; j++)
@@ -158,9 +161,17 @@ std::vector<cv::Vec3f> findCircles(
         }
         else
         {
+            significantPixels++;
             maskImg.at<unsigned char>(i,j) = 255;
         }
     }
+    }
+
+    // Don't waste processing time if nothing to process
+    double significantPct = (double) significantPixels / (maskImg.cols * maskImg.rows);
+    if (significantPct < gCfg.m_pixelThreshold)
+    {
+        return std::vector<cv::Vec3f>();
     }
 
     cv::Size strel_size;
@@ -207,7 +218,7 @@ inline void detectPointFromCV(DetectedPoint &dp,
     dp.m_radius = radius / width;
 }
 
-void markBallLocations(osg::Group *node, const vector<DetectCluster*> &points)
+void markBallLocations(osg::Group *node, const vector<DetectCluster*> &points, float weightFactor)
 {
     node->removeChildren(0, node->getNumChildren());
 
@@ -215,7 +226,7 @@ void markBallLocations(osg::Group *node, const vector<DetectCluster*> &points)
     for(iter = points.begin(); iter != points.end(); iter++)
     {
         DetectCluster *dc = *iter;
-        DetectedPoint dp = dc->averagedPoint();
+        DetectedPoint dp = dc->averagedPoint(weightFactor);
 
         float radius = 5.0f;
         osg::ShapeDrawable *sd = new osg::ShapeDrawable(new osg::Sphere(
@@ -307,7 +318,7 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
         bool foundMatch = false;
         for(int i = 0; i < m_clusters.size(); i++)
         {
-            if (m_clusters[i].inRange(detected[j]))
+            if (m_clusters[i].inRange(detected[j], m_cfg.m_weightFactor))
             {
                 m_clusters[i].newPoint(detected[j]);
                 foundMatch = true;
@@ -332,7 +343,7 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
 
     m_clusters = safeClusters;
     vector<DetectCluster*> viable = viablePoints();
-    markBallLocations(m_sceneGroup, viable);
+    markBallLocations(m_sceneGroup, viable, m_cfg.m_weightFactor);
 
     if (m_elapsedTime < m_cfg.m_transmitRate) return;
     m_elapsedTime = fmod(m_elapsedTime, m_cfg.m_transmitRate);
@@ -347,7 +358,7 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
     for(int i = 0; i < viable.size(); i++)
     {
         DetectCluster* dc = viable[i];
-        DetectedPoint dp = dc->averagedPoint();
+        DetectedPoint dp = dc->averagedPoint(m_cfg.m_weightFactor);
 
         ball_t ballMessage;
 
@@ -407,9 +418,9 @@ CamTracker* BallPlugin::CanHasTracking(){ return NULL; }
             else return false;
         }
 
-        bool DetectCluster::inRange(DetectedPoint pt)
+        bool DetectCluster::inRange(DetectedPoint pt, float weightFactor)
         {
-            DetectedPoint avg = averagedPoint();
+            DetectedPoint avg = averagedPoint(weightFactor);
 
             osg::Vec2d distance = avg.m_real - pt.m_real;
             if (pt.m_colour != m_members[0].m_colour)
@@ -440,27 +451,47 @@ CamTracker* BallPlugin::CanHasTracking(){ return NULL; }
                 m_members.erase(m_members.begin());
         }
 
-        DetectedPoint DetectCluster::averagedPoint()
+        DetectedPoint DetectCluster::averagedPoint(float weightBase)
         {
             if (m_members.size() == 1) return m_members[0];
-            std::vector<DetectedPoint>::iterator iter;
 
             DetectedPoint avgPoint = m_members[0];
+            avgPoint.m_offset = osg::Vec2d(0,0);
+            avgPoint.m_center = osg::Vec2d(0,0);
+            avgPoint.m_real = osg::Vec2d(0,0);
+            avgPoint.m_radius = 0;
 
-
-            for(iter = m_members.begin() + 1; iter != m_members.end(); iter++)
+            float lowestPoint = m_members[0].m_offset.y();
+            float highestPoint = m_members[0].m_offset.y();
+            for(int i = 1; i < m_members.size(); i++)
             {
-                DetectedPoint next = *iter;
-                avgPoint.m_center += next.m_center;
-                avgPoint.m_offset += next.m_offset;
-                avgPoint.m_real += next.m_real;
-                avgPoint.m_radius += next.m_radius;
+                if (m_members[i].m_offset.y() < lowestPoint) lowestPoint = m_members[i].m_offset.y();
+                else if (m_members[i].m_offset.y() > highestPoint) highestPoint = m_members[i].m_offset.y();
             }
 
-            avgPoint.m_center /= m_members.size();
-            avgPoint.m_offset /= m_members.size();
-            avgPoint.m_radius /= m_members.size();
-            avgPoint.m_real /= m_members.size();
+            float height = highestPoint - lowestPoint;
+
+            vector<float> weights;
+            float weightSum = 0;
+            for(int i = 0; i < m_members.size(); i++)
+            {
+                float weighting = weightBase + (1. - weightBase) * (m_members[i].m_offset.y() - highestPoint) / height;
+                weights.push_back(weighting);
+                weightSum += weighting;
+            }
+
+            for(int i = 0; i < m_members.size(); i++)
+            {
+                avgPoint.m_center += m_members[i].m_center * weights[i];
+                avgPoint.m_offset += m_members[i].m_offset * weights[i];
+                avgPoint.m_real += m_members[i].m_real * weights[i];
+                avgPoint.m_radius += m_members[i].m_radius * weights[i];
+            }
+
+            avgPoint.m_offset /= weightSum;
+            avgPoint.m_center /= weightSum;
+            avgPoint.m_radius /= weightSum;
+            avgPoint.m_real /= weightSum;;
 
             return avgPoint;
         }

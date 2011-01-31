@@ -44,7 +44,9 @@ typedef struct ball_settings
     double m_houghParam1;
     double m_houghParam2;
     double m_minRadius;
+    double m_pixelThreshold;
 
+    double m_weightFactor;
     double m_confidenceThreshold;
     double m_ageThreshold;
     double m_detectTTL;
@@ -58,10 +60,10 @@ class DetectCluster
     public:
         DetectCluster(const BallSettings *settings);
         bool tick(double time);
-        bool inRange(DetectedPoint pt);
+        bool inRange(DetectedPoint pt, float weightFactor);
         void newPoint(DetectedPoint pt);
 
-        DetectedPoint averagedPoint();
+        DetectedPoint averagedPoint(float weightBase);
         double confidence();
         double age();
         int colour();
