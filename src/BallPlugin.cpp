@@ -274,10 +274,12 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
     cv::mixChannels(&hsvImg, 3,img_split,3,from_to,3);
 
 
-
+/*
     float offsetAngle = (m_tableRef->CanHasTracking()->hasVision()) ?
                 (270. - m_tableRef->CanHasTracking()->FindAttitude()) * M_PI / 180. :
                 m_cfg.m_bottomAng;
+*/
+    float offsetAngle = m_cfg.m_bottomAng;
 
     std::vector<DetectedPoint> detected;
     std::vector<BallCharacteristics>::iterator ballIter;

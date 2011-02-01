@@ -108,3 +108,20 @@ osg::Vec4 calcIntersect (osg::Vec4d P0, osg::Vec4d u, osg::Vec4d V0, osg::Vec4d 
     if (s < 0) return osg::Vec4d(0,0,0,0);
     else return P0 + (u * s);
 }
+
+// Credit goes to here: http://sunday-lab.blogspot.com/2008/04/get-pitch-yaw-roll-from-quaternion.html
+
+float getPitch(float w, float x, float y, float z)
+{
+  return atan2(2*(y*z + w*x), w*w - x*x - y*y + z*z);
+}
+
+float getYaw(float w, float x, float y, float z)
+{
+  return asin(-2*(x*z - w*y));
+}
+
+float getRoll(float w, float x, float y, float z)
+{
+  return atan2(2*(x*y + w*z), w*w + x*x - y*y - z*z);
+}

@@ -1,6 +1,5 @@
 #include "CamTracker.h"
 #include "util.h"
-
 CamTracker::CamTracker(osg::Projection *proj, osgART::Marker *marker)
     :m_proj(proj),
       m_marker(marker)
@@ -11,14 +10,13 @@ bool CamTracker::hasVision()
     return m_marker->isValid();
 }
 
-double CamTracker::FindZRotation()
+double CamTracker::FindHeading()
 {
-    double heading, attitude, bank;
-
+    double heading;
     osg::Matrixd source = m_marker->getTransform();
     osg::Quat rotation = source.getRotate();
 
-    getEulerFromQuat(rotation, heading, attitude, bank);
+    heading = getPitch(rotation.w(), rotation.x(), rotation.y(), rotation.z());
     double hDeg = heading * (180. / M_PI);
 
     return hDeg;
@@ -26,26 +24,27 @@ double CamTracker::FindZRotation()
 
 double CamTracker::FindBanking()
 {
-    double heading, attitude, bank;
+    double attitude;
 
     osg::Matrixd source = m_marker->getTransform();
     osg::Quat rotation = source.getRotate();
 
-    getEulerFromQuat(rotation, heading, attitude, bank);
-    double bDeg = bank * (180. / M_PI);
+
+    attitude = getRoll(rotation.w(), rotation.x(), rotation.y(), rotation.z());
+    double bDeg = attitude * (180. / M_PI);
 
     return bDeg;
 }
 
 double CamTracker::FindAttitude()
 {
-    double heading, attitude, bank;
+    double bank;
 
     osg::Matrixd source = m_marker->getTransform();
     osg::Quat rotation = source.getRotate();
 
-    getEulerFromQuat(rotation, heading, attitude, bank);
-    double aDeg = attitude * (180. / M_PI);
+    bank = getYaw(rotation.w(), rotation.x(), rotation.y(), rotation.z());
+    double aDeg = bank * (180. / M_PI);
 
     return aDeg;
 }

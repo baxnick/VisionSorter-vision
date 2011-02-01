@@ -178,7 +178,7 @@ TrackableOffsetCube::TrackableOffsetCube(CamTracker *tracker, osg::Vec3d &offset
 
 double TrackableOffsetCube::GetHeading(TrackableSurface* surface)
 {
-    double rotation = m_tracker->FindZRotation() - surface->GetHeading() + 90;
+    double rotation = m_tracker->FindHeading() - surface->GetHeading() + 90;
 
     while (rotation >= 360) rotation -= 360;
     while (rotation < 0) rotation += 360;

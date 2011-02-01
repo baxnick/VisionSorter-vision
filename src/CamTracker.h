@@ -14,7 +14,7 @@ public:
     static osg::Vec4d UnprojectToPlane(osg::Vec2d pt, osg::Matrixd proj, osg::Matrixd cam, osg::Vec4d V0, osg::Vec4d n);
     osg::Vec2d ProjectPoint(osg::Vec4d worldLoc);
     static osg::Vec2d ProjectPoint(osg::Vec4d worldLoc, osg::Matrixd proj, osg::Matrixd cam);
-    double FindZRotation();
+    double FindHeading();
     double FindBanking();
     double FindAttitude();
     bool hasVision();

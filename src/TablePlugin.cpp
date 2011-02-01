@@ -169,7 +169,7 @@ TrackableSurface::TrackableSurface(CamTracker *tracker, osg::Vec2d dimensions, o
 
 double TrackableSurface::GetHeading()
 {
-    return m_tracker->FindZRotation();
+    return m_tracker->FindHeading();
 }
 
 bool TrackableSurface::IsInBounds(osg::Vec2 pt)
