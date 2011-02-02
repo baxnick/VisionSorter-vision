@@ -43,12 +43,13 @@ void getEulerFromQuat(osg::Quat q, double& heading, double& attitude, double&
 bank)
 
 {
-      double limit = 0.499999;
+      double limit = 0.499;
+
+    q = osg::Quat(q.x(), q.z(), q.y(), q.w());
 
 
-
-
-double sqx = q.x()*q.x(); double sqy = q.y()*q.y();
+    double sqx = q.x()*q.x();
+    double sqy = q.y()*q.y();
 
       double sqz = q.z()*q.z();
 

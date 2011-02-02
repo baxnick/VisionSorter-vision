@@ -12,11 +12,11 @@ bool CamTracker::hasVision()
 
 double CamTracker::FindHeading()
 {
-    double heading;
+    double heading, attitude, bank;
     osg::Matrixd source = m_marker->getTransform();
     osg::Quat rotation = source.getRotate();
 
-    heading = getPitch(rotation.w(), rotation.x(), rotation.y(), rotation.z());
+    getEulerFromQuat(rotation, heading, attitude, bank);
     double hDeg = heading * (180. / M_PI);
 
     return hDeg;
@@ -24,13 +24,13 @@ double CamTracker::FindHeading()
 
 double CamTracker::FindBanking()
 {
-    double attitude;
+    double heading, attitude, bank;
 
     osg::Matrixd source = m_marker->getTransform();
     osg::Quat rotation = source.getRotate();
 
 
-    attitude = getRoll(rotation.w(), rotation.x(), rotation.y(), rotation.z());
+    getEulerFromQuat(rotation, heading, attitude, bank);
     double bDeg = attitude * (180. / M_PI);
 
     return bDeg;
@@ -38,12 +38,12 @@ double CamTracker::FindBanking()
 
 double CamTracker::FindAttitude()
 {
-    double bank;
+    double heading, attitude, bank;
 
     osg::Matrixd source = m_marker->getTransform();
     osg::Quat rotation = source.getRotate();
 
-    bank = getYaw(rotation.w(), rotation.x(), rotation.y(), rotation.z());
+    getEulerFromQuat(rotation, heading, attitude, bank);
     double aDeg = bank * (180. / M_PI);
 
     return aDeg;
