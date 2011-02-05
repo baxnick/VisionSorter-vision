@@ -167,6 +167,11 @@ TrackableSurface::TrackableSurface(CamTracker *tracker, osg::Vec2d dimensions, o
       m_n(n)
 {}
 
+CamTracker* TrackableSurface::GetTracker()
+{
+    return m_tracker;
+}
+
 double TrackableSurface::GetHeading()
 {
     return m_tracker->FindHeading();

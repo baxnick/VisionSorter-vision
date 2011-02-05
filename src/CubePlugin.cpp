@@ -178,10 +178,9 @@ TrackableOffsetCube::TrackableOffsetCube(CamTracker *tracker, osg::Vec3d &offset
 
 double TrackableOffsetCube::GetHeading(TrackableSurface* surface)
 {
-    double rotation = m_tracker->FindHeading() - surface->GetHeading() + 90;
+    double rotation = m_tracker->GetHeading(surface->GetTracker());
+    rotation = (rotation / M_PI) * 180.;
 
-    while (rotation >= 360) rotation -= 360;
-    while (rotation < 0) rotation += 360;
     return rotation;
 }
 
@@ -198,5 +197,7 @@ osg::Vec2d TrackableOffsetCube::ScreenLocationBase()
 
 osg::Vec2d TrackableOffsetCube::SurfaceLocation(TrackableSurface *surface)
 {
-    return surface->Unproject(this->ScreenLocationBase());
+    osg::Vec2d surfacePoint = m_tracker->GetPosition(surface->GetTracker());
+    //surfacePoint += osg::Vec2d(m_offset.x(), m_offset.y());
+    return surfacePoint;
 }

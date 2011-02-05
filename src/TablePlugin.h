@@ -25,6 +25,7 @@ public:
     osg::Vec2d Unproject(osg::Vec2d pt);
     bool IsInBounds(osg::Vec2 pt);
     double GetHeading();
+    CamTracker* GetTracker();
 protected:
     CamTracker *m_tracker;
     osg::Vec4d m_V0;

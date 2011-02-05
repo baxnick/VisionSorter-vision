@@ -17,6 +17,10 @@ public:
     double FindHeading();
     double FindBanking();
     double FindAttitude();
+
+    osg::Vec2d GetPosition(const CamTracker *reference);
+    float GetHeading(const CamTracker *reference);
+
     bool hasVision();
 protected:
     osg::Projection* m_proj;

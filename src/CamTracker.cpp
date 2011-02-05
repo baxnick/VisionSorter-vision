@@ -85,3 +85,32 @@ osg::Vec2d CamTracker::ProjectPoint(osg::Vec4d worldLoc)
 {
     return CamTracker::ProjectPoint(worldLoc, m_proj->getMatrix(), m_marker->getTransform());
 }
+
+osg::Vec2d CamTracker::GetPosition(const CamTracker *reference)
+{
+    osg::Matrix myT = m_marker->getTransform();
+    osg::Matrix oT = osg::Matrix::inverse(reference->m_marker->getTransform());
+    osg::Vec4d P0 = osg::Vec4d(0, 0, 0, 1);
+
+    P0 = P0 * (myT * oT);
+
+    return osg::Vec2d(P0.x(), P0.y());
+}
+
+float CamTracker::GetHeading(const CamTracker *reference)
+{
+    osg::Matrix myT = m_marker->getTransform();
+    osg::Matrix oT = osg::Matrix::inverse(reference->m_marker->getTransform());
+
+    osg::Vec4d P0 = osg::Vec4d(0, 0, 0, 1);
+    P0 = P0 * (myT * oT);
+
+    osg::Vec4d P1 = osg::Vec4d(0, 10000, 0, 1);
+    P1 = P1 * (myT * oT);
+
+    float o = P1.y() - P0.y();
+    float a = P1.x() - P0.x();
+
+    float heading = atan2(o, a);
+    return heading;
+}
