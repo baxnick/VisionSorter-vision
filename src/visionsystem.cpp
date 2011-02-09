@@ -1,5 +1,5 @@
 #include "visionsystem.h"
-#include "info_t.h"
+#include "lcmtypes/info_t.h"
 
 // required
 #include <osgART/Foundation>

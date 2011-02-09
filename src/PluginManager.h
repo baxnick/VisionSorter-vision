@@ -7,7 +7,7 @@
 #include <osgART/TrackerManager>
 #include <lcm/lcm.h>
 
-#include "info_t.h"
+#include "lcmtypes/info_t.h"
 
 class PluginManager
 {

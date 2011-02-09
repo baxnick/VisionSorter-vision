@@ -1,0 +1,5 @@
+The src/lcmtypes directory needs to be regenerated whenever the contents of src/lcm change.
+You can do this by changing to the src/lcm subdirectory and executing "./rebuild.sh"
+This will also generate lcmtypes.jar, needed by the orchestration layer and (if needed)
+the lcm-spy utility.
+

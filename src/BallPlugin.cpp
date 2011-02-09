@@ -1,8 +1,8 @@
 #include "Plugin.h"
 #include "BallPlugin.h"
 #include "util.h"
-#include "balls_t.h"
-#include "ball_t.h"
+#include "lcmtypes/balls_t.h"
+#include "lcmtypes/ball_t.h"
 
 #include <osg/ShapeDrawable>
 #include <osg/Geode>

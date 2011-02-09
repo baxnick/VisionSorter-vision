@@ -1,5 +1,5 @@
 #include "CubePlugin.h"
-#include "cube_t.h"
+#include "lcmtypes/cube_t.h"
 #include "util.h"
 
 #include <osg/ShapeDrawable>

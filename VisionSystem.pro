@@ -45,7 +45,7 @@ HEADERS += src/util.h \
     src/CamTracker.h \
     src/PluginManager.h \
     src/Plugin.h \
-    $$files(src/*_t.h) \
+    $$files(src/lcmtypes/*.h) \
     src/visionsystem.h \
     src/TablePlugin.h \
     src/CubePlugin.h \
@@ -55,7 +55,7 @@ SOURCES += src/main.cpp \
     src/util.cpp \
     src/CamTracker.cpp \
     src/Plugin.cpp \
-    $$files(src/*_t.c) \
+    $$files(src/lcmtypes/*.c) \
     src/visionsystem.cpp \
     src/TablePlugin.cpp \
     src/CubePlugin.cpp \
