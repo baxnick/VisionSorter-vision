@@ -3,7 +3,7 @@
 #include <osg/Vec2>
 #include <osg/Vec4>
 
-#include "Plugin.h"
+#include <plugin/Plugin.h>
 
 typedef struct table_settings
 {
@@ -46,6 +46,8 @@ public:
 
     CamTracker* CanHasTracking();
     TrackableSurface *Surface();
+
+    static TablePlugin* getTableRef(std::vector<Plugin*> &plugins);
 private:
     osgART::Marker *m_marker;
     CamTracker *m_camTracker;

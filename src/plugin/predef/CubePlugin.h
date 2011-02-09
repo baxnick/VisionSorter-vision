@@ -3,7 +3,7 @@
 #include <boost/shared_ptr.hpp>
 #include <osg/Vec3>
 
-#include "Plugin.h"
+#include <plugin/Plugin.h>
 #include "TablePlugin.h"
 
 namespace Cube{

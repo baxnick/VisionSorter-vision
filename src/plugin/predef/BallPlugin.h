@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Plugin.h"
+#include <plugin/Plugin.h>
 #include "TablePlugin.h"
 
 #include <boost/smart_ptr.hpp>

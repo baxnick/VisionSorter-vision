@@ -21,7 +21,7 @@ LIBS += -L/usr/lib -lcv -lcxcore -lhighgui
 
 INCLUDEPATH += $$(MIXINC)
 INCLUDEPATH += /usr/local/include
-
+INCLUDEPATH += src/
 debug {
   OBJECTS_DIR     = $$(ARTKP)/VisionSystem/build/linux/debug
 }
@@ -43,23 +43,23 @@ release {
 
 HEADERS += src/util.h \
     src/CamTracker.h \
-    src/PluginManager.h \
-    src/Plugin.h \
+    src/plugin/PluginManager.h \
+    src/plugin/Plugin.h \
     $$files(src/lcmtypes/*.h) \
     src/visionsystem.h \
-    src/TablePlugin.h \
-    src/CubePlugin.h \
-    src/BallPlugin.h
+    src/plugin/predef/TablePlugin.h \
+    src/plugin/predef/CubePlugin.h \
+    src/plugin/predef/BallPlugin.h
 
 SOURCES += src/main.cpp \
     src/util.cpp \
     src/CamTracker.cpp \
-    src/Plugin.cpp \
+    src/plugin/Plugin.cpp \
     $$files(src/lcmtypes/*.c) \
     src/visionsystem.cpp \
-    src/TablePlugin.cpp \
-    src/CubePlugin.cpp \
-    src/BallPlugin.cpp
+    src/plugin/predef/TablePlugin.cpp \
+    src/plugin/predef/CubePlugin.cpp \
+    src/plugin/predef/BallPlugin.cpp
 
 target.path = ""/$$PREFIX/bin
 INSTALLS += target

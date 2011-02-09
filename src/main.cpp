@@ -3,10 +3,9 @@
 #include "util.h"
 
 #include "visionsystem.h"
-#include "Plugin.h"
-#include "TablePlugin.h"
-#include "CubePlugin.h"
-#include "BallPlugin.h"
+#include <plugin/predef/TablePlugin.h>
+#include <plugin/predef/CubePlugin.h>
+#include <plugin/predef/BallPlugin.h>
 
 using namespace std;
 

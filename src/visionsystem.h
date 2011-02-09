@@ -1,7 +1,7 @@
 #pragma once
 
-#include "PluginManager.h"
-#include "Plugin.h"
+#include <plugin/PluginManager.h>
+#include <plugin/Plugin.h>
 
 #include <osgProducer/Viewer>
 

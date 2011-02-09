@@ -86,7 +86,7 @@ bool CubePlugin::Init(PluginManager *manager, const std::string &cfgFile)
 
 void CubePlugin::AnnounceClients(std::vector<Plugin*> &clients)
 {
-    m_tableRef = getTableRef(clients);
+    m_tableRef = TablePlugin::getTableRef(clients);
 
     if (m_tableRef == NULL)
     {

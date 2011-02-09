@@ -1,4 +1,3 @@
-#include "Plugin.h"
 #include "BallPlugin.h"
 #include "util.h"
 #include "lcmtypes/balls_t.h"
@@ -121,7 +120,7 @@ bool BallPlugin::Init(PluginManager *manager, const std::string &cfgFile)
 
 void BallPlugin::AnnounceClients(std::vector<Plugin*> &clients)
 {
-    m_tableRef = getTableRef(clients);
+    m_tableRef = TablePlugin::getTableRef(clients);
 
     if (m_tableRef == NULL)
     {
