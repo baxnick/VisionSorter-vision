@@ -3,8 +3,6 @@
 # QMake definitions for simple example
 #
 
-include ($$(ARTKP)/build/linux/options.pro)
-
 TEMPLATE = app
 
 TARGET   = VisionSystem
