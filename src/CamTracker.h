@@ -28,21 +28,21 @@
 class CamTracker
 {
 public:
-    CamTracker(osg::Projection *proj, osgART::Marker *marker);
-    osg::Vec4d UnprojectToPlane(osg::Vec2d pt, osg::Vec4d V0, osg::Vec4d n);
-    static osg::Vec4d UnprojectToPlane(osg::Vec2d pt, osg::Matrixd proj, osg::Matrixd cam, osg::Vec4d V0, osg::Vec4d n);
-    osg::Vec2d ProjectPoint(osg::Vec4d worldLoc);
-    static osg::Vec2d ProjectPoint(osg::Vec4d worldLoc, osg::Matrixd proj, osg::Matrixd cam);
-    double FindHeading();
-    double FindBanking();
-    double FindAttitude();
+   CamTracker(osg::Projection *proj, osgART::Marker *marker);
+   osg::Vec4d UnprojectToPlane(osg::Vec2d pt, osg::Vec4d V0, osg::Vec4d n);
+   static osg::Vec4d UnprojectToPlane(osg::Vec2d pt, osg::Matrixd proj, osg::Matrixd cam, osg::Vec4d V0, osg::Vec4d n);
+   osg::Vec2d ProjectPoint(osg::Vec4d worldLoc);
+   static osg::Vec2d ProjectPoint(osg::Vec4d worldLoc, osg::Matrixd proj, osg::Matrixd cam);
+   double FindHeading();
+   double FindBanking();
+   double FindAttitude();
 
-    osg::Vec2d GetPosition(const CamTracker *reference);
-    float GetHeading(const CamTracker *reference);
+   osg::Vec2d GetPosition(const CamTracker *reference);
+   float GetHeading(const CamTracker *reference);
 
-    bool hasVision();
+   bool hasVision();
 protected:
-    osg::Projection* m_proj;
-    osgART::Marker *m_marker;
+   osg::Projection* m_proj;
+   osgART::Marker *m_marker;
 
 };

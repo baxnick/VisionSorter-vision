@@ -41,36 +41,36 @@
 class Plugin
 {
 public:
-    virtual std::string Id() = 0;
-    virtual int Priority() = 0;
-    virtual int TrackedItemCount() = 0;
-    virtual bool Init(PluginManager *manager, const std::string &cfgFile) = 0;
-    virtual void AnnounceClients(std::vector<Plugin*> &clients) = 0;
+   virtual std::string Id() = 0;
+   virtual int Priority() = 0;
+   virtual int TrackedItemCount() = 0;
+   virtual bool Init(PluginManager *manager, const std::string &cfgFile) = 0;
+   virtual void AnnounceClients(std::vector<Plugin*> &clients) = 0;
 
-    virtual void IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now, double elapsed) = 0;
-    virtual void IncludeInScene(osg::Node* child) = 0;
+   virtual void IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now, double elapsed) = 0;
+   virtual void IncludeInScene(osg::Node* child) = 0;
 
-    virtual CamTracker* CanHasTracking() = 0;
+   virtual CamTracker* CanHasTracking() = 0;
 
-    virtual ~Plugin(){};
+   virtual ~Plugin() {};
 };
 
 class BasePlugin : public Plugin
 {
-    public:
-        virtual std::string Id();
-        virtual int Priority();
-        virtual int TrackedItemCount();
+public:
+   virtual std::string Id();
+   virtual int Priority();
+   virtual int TrackedItemCount();
 
-        BasePlugin(PluginManager *manager, std::string id, int priority);
-    protected:
-        BasePlugin();
-        void Construct(PluginManager *manager, std::string id, int priority);
-        PluginManager *m_manager;
-        int m_numTrackedItems;
-        double m_elapsedTime;
-        double m_validTime;
-    private:
-        std::string m_id;
-        int m_priority;
+   BasePlugin(PluginManager *manager, std::string id, int priority);
+protected:
+   BasePlugin();
+   void Construct(PluginManager *manager, std::string id, int priority);
+   PluginManager *m_manager;
+   int m_numTrackedItems;
+   double m_elapsedTime;
+   double m_validTime;
+private:
+   std::string m_id;
+   int m_priority;
 };
