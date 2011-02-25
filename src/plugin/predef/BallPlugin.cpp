@@ -129,6 +129,8 @@ void BallPlugin::AnnounceClients(std::vector<Plugin*> &clients)
     }
 }
 
+// Derived from parts 3, 4, and 5 of the IHeartRobotics tutorial series at:
+// http://www.iheartrobotics.com/search/label/Vision for Robots
 std::vector<cv::Vec3f> findCircles(
     const BallSettings &gCfg, const BallCharacteristics &iCfg,
     const cv::Mat &hue, const cv::Mat &sat, const cv::Mat &val, cv::Mat &maskImg)
@@ -188,7 +190,6 @@ std::vector<cv::Vec3f> findCircles(
         // The vector circles will hold the position and radius of the detected circles
         std::vector<cv::Vec3f> circles;
 
-        // Detect circles That have a radius between 20 and 400 that are a minimum of 70 pixels apart
         cv::HoughCircles(maskImg, circles, CV_HOUGH_GRADIENT, 1,
                          gCfg.m_houghMinDist,
                          gCfg.m_houghParam1, gCfg.m_houghParam2,
@@ -239,6 +240,8 @@ void markBallLocations(osg::Group *node, const vector<DetectCluster*> &points, f
     }
 }
 
+// Derived from part 2 of the IHeartRobotics tutorial series at:
+// http://www.iheartrobotics.com/search/label/Vision for Robots
 void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now, double elapsed)
 {
     m_elapsedTime += elapsed;
@@ -273,13 +276,11 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
     cv::mixChannels(&hsvImg, 3,img_split,3,from_to,3);
 
 
-/*
-    float offsetAngle = (m_tableRef->CanHasTracking()->hasVision()) ?
-                (270. - m_tableRef->CanHasTracking()->FindAttitude()) * M_PI / 180. :
-                m_cfg.m_bottomAng;
-*/
+    // Hard coded bottom angle for now
     float offsetAngle = m_cfg.m_bottomAng;
 
+
+    // DETECTION
     std::vector<DetectedPoint> detected;
     std::vector<BallCharacteristics>::iterator ballIter;
     for(ballIter = m_cfg.m_ballParams.begin(); ballIter != m_cfg.m_ballParams.end(); ballIter++)
@@ -295,8 +296,6 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
             DetectedPoint dp;
             detectPointFromCV(dp, circles[i], offsetAngle, maskImg.cols, maskImg.rows);
             dp.m_colour = colourSet.m_colour;
-
-            // TODO optionally draw the detected circles at this point..
 
             if (!m_tableRef->CanHasTracking()->hasVision()) continue;
             dp.m_real = m_tableRef->Surface()->Unproject(dp.m_offset);
@@ -314,6 +313,7 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
         }
     }
 
+    // CLUSTERING
     for (int j = 0; j < detected.size(); j++)
     {
         bool foundMatch = false;
@@ -346,6 +346,8 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
     vector<DetectCluster*> viable = viablePoints();
     markBallLocations(m_sceneGroup, viable, m_cfg.m_weightFactor);
 
+
+    // MESSAGING
     if (m_elapsedTime < m_cfg.m_transmitRate) return;
     m_elapsedTime = fmod(m_elapsedTime, m_cfg.m_transmitRate);
 
@@ -379,7 +381,7 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
 
 void BallPlugin::IncludeInScene(osg::Node* child)
 {
-    // TODO
+    // Not required
 }
 
 vector<DetectCluster*> BallPlugin::viablePoints()
