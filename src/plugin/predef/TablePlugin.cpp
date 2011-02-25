@@ -172,11 +172,6 @@ CamTracker* TrackableSurface::GetTracker()
     return m_tracker;
 }
 
-double TrackableSurface::GetHeading()
-{
-    return m_tracker->FindHeading();
-}
-
 bool TrackableSurface::IsInBounds(osg::Vec2 pt)
 {
     if (pt.x() < 0 || pt.y() < 0) return false;

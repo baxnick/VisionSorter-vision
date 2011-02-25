@@ -24,7 +24,6 @@ public:
     TrackableSurface(CamTracker *tracker, osg::Vec2d dimensions, osg::Vec4d V0, osg::Vec4d n);
     osg::Vec2d Unproject(osg::Vec2d pt);
     bool IsInBounds(osg::Vec2 pt);
-    double GetHeading();
     CamTracker* GetTracker();
 protected:
     CamTracker *m_tracker;
