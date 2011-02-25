@@ -134,8 +134,8 @@ bool VisionSystem::Init()
     m_id = std::string(m_argv[1]);
     m_cameraDat = std::string(m_argv[2]);
 
-    int vidx;
-    int vidy;
+    int vidx = -1;
+    int vidy = -1;
 
     if (m_argc >= 5)
     {

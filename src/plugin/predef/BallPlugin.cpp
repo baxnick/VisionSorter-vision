@@ -107,7 +107,7 @@ void BallSettings::load(const std::string &path)
     m_confidenceThreshold = pt.get("ball.confidence_threshold", 0.3);
     m_ageThreshold = pt.get("ball.age_threshold", 2.0);
     m_detectTTL = pt.get("ball.ttl", 3.0);
-    m_detectHistory = pt.get("ball.history", 20);
+    m_detectHistory = pt.get("ball.history", (uint) 20);
     m_errRadius = pt.get("ball.error", 0.1);
 }
 
@@ -333,10 +333,10 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
     }
 
     // CLUSTERING
-    for (int j = 0; j < detected.size(); j++)
+    for (uint j = 0; j < detected.size(); j++)
     {
         bool foundMatch = false;
-        for(int i = 0; i < m_clusters.size(); i++)
+        for(uint i = 0; i < m_clusters.size(); i++)
         {
             if (m_clusters[i].inRange(detected[j], m_cfg.m_weightFactor))
             {
@@ -355,7 +355,7 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
     }
 
     std::vector<DetectCluster> safeClusters;
-    for(int i = 0; i < m_clusters.size(); i++)
+    for(uint i = 0; i < m_clusters.size(); i++)
     {
         bool alive = m_clusters[i].tick(elapsed);
         if (alive) safeClusters.push_back(m_clusters[i]);
@@ -377,7 +377,7 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
     message.balls_size = viable.size();
     message.balls = indieBalls;
 
-    for(int i = 0; i < viable.size(); i++)
+    for(uint i = 0; i < viable.size(); i++)
     {
         DetectCluster* dc = viable[i];
         DetectedPoint dp = dc->averagedPoint(m_cfg.m_weightFactor);
@@ -485,7 +485,7 @@ CamTracker* BallPlugin::CanHasTracking(){ return NULL; }
 
             float lowestPoint = m_members[0].m_offset.y();
             float highestPoint = m_members[0].m_offset.y();
-            for(int i = 1; i < m_members.size(); i++)
+            for(uint i = 1; i < m_members.size(); i++)
             {
                 if (m_members[i].m_offset.y() < lowestPoint) lowestPoint = m_members[i].m_offset.y();
                 else if (m_members[i].m_offset.y() > highestPoint) highestPoint = m_members[i].m_offset.y();
@@ -495,14 +495,14 @@ CamTracker* BallPlugin::CanHasTracking(){ return NULL; }
 
             vector<float> weights;
             float weightSum = 0;
-            for(int i = 0; i < m_members.size(); i++)
+            for(uint i = 0; i < m_members.size(); i++)
             {
                 float weighting = weightBase + (1. - weightBase) * (m_members[i].m_offset.y() - highestPoint) / height;
                 weights.push_back(weighting);
                 weightSum += weighting;
             }
 
-            for(int i = 0; i < m_members.size(); i++)
+            for(uint i = 0; i < m_members.size(); i++)
             {
                 avgPoint.m_center += m_members[i].m_center * weights[i];
                 avgPoint.m_offset += m_members[i].m_offset * weights[i];

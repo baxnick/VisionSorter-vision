@@ -69,7 +69,7 @@ typedef struct ball_settings
     double m_confidenceThreshold;
     double m_ageThreshold;
     double m_detectTTL;
-    int m_detectHistory;
+    uint m_detectHistory;
     double m_errRadius;
 
 } BallSettings;
