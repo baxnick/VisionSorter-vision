@@ -82,14 +82,18 @@ void BallSettings::load(const std::string &path)
    m_bottomAng = pt.get("ball.angle_to_bottom", 270.0);
    m_bottomAng = m_bottomAng * M_PI / 180.;
 
+   m_preBlurFactor = pt.get("ball.pre_blur_factor", (int) 9);
    m_preBlur = pt.get("ball.pre_blur", 6.);
+   m_postBlurFactor = pt.get("ball.post_blur_factor", (int) 9);
    m_postBlur = pt.get("ball.post_blur", 4.);
    m_strelSize = pt.get("ball.strel_size", 3.);
    m_pixelThreshold = pt.get("ball.pixel_threshold", 0.03);
+   m_houghScale = pt.get("ball.hough_scale", 1.);
    m_houghMinDist = pt.get("ball.hough_min_dist", 70.);
    m_houghParam1 = pt.get("ball.hough_param_1", 145.);
    m_houghParam2 = pt.get("ball.hough_param_2", 15.);
-   m_minRadius = pt.get("ball.hough_min_radius", 20.);
+   m_minRadius = pt.get("ball.hough_min_radius", (int) 20);
+   m_maxRadius = pt.get("ball.hough_max_radius", (int) 200);
 
    int colour_count = pt.get("ball.colour_count", 0);
 
@@ -203,17 +207,21 @@ std::vector<cv::Vec3f> findCircles(
 
    // Convert White on Black to Black on White by inverting the image
    cv::bitwise_not(maskImg, maskImg);
-   // Blur the image to improve detection
-   cv::GaussianBlur(maskImg,maskImg, cv::Size(9,9), gCfg.m_postBlur, gCfg.m_postBlur );
+
+   if (gCfg.m_postBlur > 0)
+       {
+       // Blur the image to improve detection
+       cv::GaussianBlur(maskImg,maskImg, cv::Size(gCfg.m_postBlurFactor, gCfg.m_postBlurFactor), gCfg.m_postBlur, gCfg.m_postBlur );
+        }
 
    // See http://opencv.willowgarage.com/documentation/cpp/feature_detection.html?highlight=hough#HoughCircles
    // The vector circles will hold the position and radius of the detected circles
    std::vector<cv::Vec3f> circles;
 
-   cv::HoughCircles(maskImg, circles, CV_HOUGH_GRADIENT, 1,
+   cv::HoughCircles(maskImg, circles, CV_HOUGH_GRADIENT, gCfg.m_houghScale,
                     gCfg.m_houghMinDist,
                     gCfg.m_houghParam1, gCfg.m_houghParam2,
-                    gCfg.m_minRadius, maskImg.cols / 4);
+                    gCfg.m_minRadius, gCfg.m_maxRadius);
    return circles;
 }
 
@@ -269,10 +277,6 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
    unsigned char imgCpy[sourceVid->getHeight() * sourceVid->getWidth() * 3];
    memcpy(imgCpy, sourceVid->getImage()->data(), sizeof(imgCpy));
 
-   cv::Mat finalImg = cv::Mat(
-                         sourceVid->getHeight(), sourceVid->getWidth(),
-                         CV_8UC3, sourceVid->getImageRaw());
-
    cv::Mat incImg = cv::Mat(
                        sourceVid->getHeight(), sourceVid->getWidth(),
                        CV_8UC3, imgCpy);
@@ -283,7 +287,7 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
 
    if (m_cfg.m_preBlur > 0)
    {
-      cv::GaussianBlur(hsvImg,hsvImg, cv::Size(9,9), m_cfg.m_preBlur, m_cfg.m_preBlur);
+      cv::GaussianBlur(hsvImg,hsvImg, cv::Size(m_cfg.m_preBlurFactor, m_cfg.m_preBlurFactor), m_cfg.m_preBlur, m_cfg.m_preBlur);
    }
 
    cv::Mat hue = cv::Mat::zeros(hsvImg.rows, hsvImg.cols, CV_8U);

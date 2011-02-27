@@ -57,13 +57,17 @@ typedef struct ball_settings
 
    std::vector<BallCharacteristics> m_ballParams;
 
+   int m_preBlurFactor;
    double m_preBlur;
+   int m_postBlurFactor;
    double m_postBlur;
    double m_strelSize;
+   double m_houghScale;
    double m_houghMinDist;
    double m_houghParam1;
    double m_houghParam2;
-   double m_minRadius;
+   int m_minRadius;
+   int m_maxRadius;
    double m_pixelThreshold;
 
    double m_weightFactor;
