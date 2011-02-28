@@ -273,17 +273,18 @@ void markBallLocations(osg::Group *node, const vector<DetectCluster*> &points, f
 void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now, double elapsed)
 {
    m_elapsedTime += elapsed;
+   if (m_elapsedTime < m_cfg.m_transmitRate) return;
+   m_elapsedTime = fmod(m_elapsedTime, m_cfg.m_transmitRate);
+
 
    unsigned char imgCpy[sourceVid->getHeight() * sourceVid->getWidth() * 3];
    memcpy(imgCpy, sourceVid->getImage()->data(), sizeof(imgCpy));
-
-   cv::Mat incImg = cv::Mat(
+       cv::Mat incImg = cv::Mat(
                        sourceVid->getHeight(), sourceVid->getWidth(),
                        CV_8UC3, imgCpy);
-   cv::cvtColor(incImg, incImg, CV_RGB2BGR);
-
-   cv::Mat hsvImg = incImg.clone();
-   cv::cvtColor (incImg, hsvImg, CV_BGR2HSV);
+       cv::Mat hsvImg = incImg.clone();
+       cv::resize(incImg, hsvImg, cv::Size((int)(hsvImg.cols * 0.5), (int)(hsvImg.rows * 0.5)));
+       cv::cvtColor(hsvImg, hsvImg, CV_RGB2HSV);
 
    if (m_cfg.m_preBlur > 0)
    {
@@ -372,9 +373,6 @@ void BallPlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
 
 
    // MESSAGING
-   if (m_elapsedTime < m_cfg.m_transmitRate) return;
-   m_elapsedTime = fmod(m_elapsedTime, m_cfg.m_transmitRate);
-
    balls_t message;
    message.info = m_manager->GetInfo(now);
 

@@ -122,7 +122,6 @@ void CubePlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now
    else m_validTime = 0;
 
    if (m_elapsedTime < m_cfg.m_transmitRate || m_validTime < m_cfg.m_validThreshold) return;
-
    m_elapsedTime = fmod(m_elapsedTime, m_cfg.m_transmitRate);
 
    double orientation = m_cubeTrackable->GetHeading(m_tableRef->Surface());

@@ -157,7 +157,6 @@ void TablePlugin::AnnounceClients(std::vector<Plugin*> &clients)
 void TablePlugin::IncomingFrame(osgART::GenericVideo* sourceVid, osg::Timer_t now, double elapsed)
 {
    m_elapsedTime += elapsed;
-
    if (m_elapsedTime < m_cfg.m_transmitRate) return;
 
    m_elapsedTime = fmod(m_elapsedTime, m_cfg.m_transmitRate);
